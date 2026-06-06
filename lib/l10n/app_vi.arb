@@ -1,0 +1,11 @@
+{
+  "@@locale": "vi",
+  "appName": "Con ơi",
+  "@appName": {
+    "description": "Tên ứng dụng"
+  },
+  "welcomeTitle": "Chào mừng đến với Con ơi",
+  "@welcomeTitle": {
+    "description": "Tiêu đề màn hình chào mừng"
+  }
+}

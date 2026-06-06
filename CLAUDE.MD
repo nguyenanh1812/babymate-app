@@ -63,3 +63,44 @@ Strong success criteria let you loop independently. Weak criteria ("make it work
 ---
 
 **These guidelines are working if:** fewer unnecessary changes in diffs, fewer rewrites due to overcomplication, and clarifying questions come before implementation rather than after mistakes.
+
+---
+
+# BabyMate — Ngữ cảnh dự án
+
+Ứng dụng Flutter hỗ trợ **chăm sóc trẻ sơ sinh** những tháng đầu đời. Người
+dùng chính: bố/mẹ trực tiếp chăm bé. **Offline-first** — dữ liệu lưu cục bộ.
+
+## Stack
+- Flutter (Dart 3, Material 3), **Bloc** (`flutter_bloc`) quản lý state.
+- **Clean Architecture**: `data / domain / presentation` cho mỗi feature.
+- Điều hướng `go_router`, DI `get_it` (đăng ký thủ công), lưu trữ `hive`.
+- Model `freezed` + `json_serializable`; đa ngôn ngữ ARB (vi mặc định, en).
+
+## Tài liệu phải đọc trước khi code
+- `docs/ARCHITECTURE.md` — ranh giới tầng, hướng phụ thuộc, cách thêm feature.
+- `docs/CONVENTIONS.md` — đặt tên, git, test, sinh code.
+- `lib/features/README.md` — khuôn thư mục của một feature.
+
+## Ranh giới bắt buộc tôn trọng
+- `domain/` KHÔNG import Flutter/Hive/json. Repository ở domain là interface,
+  trả về `Result<T>` (xem `core/error/`).
+- `data/` ném `Exception`, repository impl chuyển thành `Failure`.
+- `presentation/` (Bloc) chỉ gọi **use case**, không gọi repository trực tiếp.
+- Không import chéo giữa các feature; dùng chung thì đưa lên `core/`.
+- `core/` không import gì từ `features/`.
+- Chuỗi hiển thị qua `AppLocalizations`; màu/spacing lấy từ `core/theme`.
+
+## Lệnh
+```bash
+flutter analyze                                            # phải sạch
+dart format .
+flutter test
+dart run build_runner build --delete-conflicting-outputs  # sau khi sửa model
+flutter gen-l10n                                           # sau khi sửa .arb
+```
+
+## Lưu ý
+- File sinh tự động (`*.g.dart`, `*.freezed.dart`, `lib/l10n/app_localizations*.dart`)
+  được commit; đã loại khỏi analyzer.
+- Khung hiện CHƯA có feature nào — `home` chỉ là màn hình placeholder.
