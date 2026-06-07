@@ -23,13 +23,14 @@ class SupplyTxnModelAdapter extends TypeAdapter<SupplyTxnModel> {
       delta: fields[3] as int,
       time: fields[4] as DateTime,
       note: fields[5] as String?,
+      category: fields[6] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SupplyTxnModel obj) {
     writer
-      ..writeByte(6)
+      ..writeByte(7)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -41,7 +42,9 @@ class SupplyTxnModelAdapter extends TypeAdapter<SupplyTxnModel> {
       ..writeByte(4)
       ..write(obj.time)
       ..writeByte(5)
-      ..write(obj.note);
+      ..write(obj.note)
+      ..writeByte(6)
+      ..write(obj.category);
   }
 
   @override

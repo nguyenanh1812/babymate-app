@@ -39,7 +39,7 @@ class _PumpingPageState extends State<PumpingPage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Hút sữa'),
+        title: const Text('Hút sữa cùng mẹ'),
         actions: [
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
@@ -88,7 +88,7 @@ class _PumpingPageState extends State<PumpingPage> {
               ),
               const SizedBox(height: AppSpacing.lg),
               Text(
-                'Các cữ hút',
+                'Các cữ hút của mẹ',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.xs),

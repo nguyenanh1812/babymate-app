@@ -19,38 +19,70 @@ class InventoryState extends Equatable {
   int stockOf(SupplyType type) =>
       txns.where((t) => t.type == type).fold(0, (sum, t) => sum + t.delta);
 
+  /// Các loại của [type]: loại có sẵn + loại đã từng phát sinh giao dịch.
+  List<String> categoriesOf(SupplyType type) {
+    final fallback = defaultCategoryOf(type);
+    final set = <String>{...presetCategoriesOf(type)};
+    for (final t in txns) {
+      if (t.type == type) set.add(t.category ?? fallback);
+    }
+    return set.toList();
+  }
+
+  /// Tồn kho của [type] theo từng loại.
+  int stockByCategory(SupplyType type, String category) {
+    final fallback = defaultCategoryOf(type);
+    return txns
+        .where((t) => t.type == type && (t.category ?? fallback) == category)
+        .fold(0, (sum, t) => sum + t.delta);
+  }
+
+  /// Các loại bỉm (tiện dụng cho màn hình ghi thay tã).
+  List<String> diaperCategories() => categoriesOf(SupplyType.diaper);
+
   /// Số lượng đã dùng hôm nay (số dương).
   int usedTodayOf(SupplyType type) => txns
       .where((t) => t.type == type && t.delta < 0 && t.time.isToday)
       .fold(0, (sum, t) => sum - t.delta);
 
-  /// Số đã mua trong tháng [month].
-  int boughtInMonth(SupplyType type, DateTime month) => txns
+  bool _matchCategory(SupplyTxn t, String? category) =>
+      category == null || (t.category ?? defaultCategoryOf(t.type)) == category;
+
+  /// Số đã mua trong tháng [month]; lọc theo [category] nếu có.
+  int boughtInMonth(SupplyType type, DateTime month, {String? category}) => txns
       .where(
         (t) =>
             t.type == type &&
             t.delta > 0 &&
             t.time.year == month.year &&
-            t.time.month == month.month,
+            t.time.month == month.month &&
+            _matchCategory(t, category),
       )
       .fold(0, (sum, t) => sum + t.delta);
 
-  /// Số đã dùng trong tháng [month] (số dương).
-  int usedInMonth(SupplyType type, DateTime month) => txns
+  /// Số đã dùng trong tháng [month] (số dương); lọc theo [category] nếu có.
+  int usedInMonth(SupplyType type, DateTime month, {String? category}) => txns
       .where(
         (t) =>
             t.type == type &&
             t.delta < 0 &&
             t.time.year == month.year &&
-            t.time.month == month.month,
+            t.time.month == month.month &&
+            _matchCategory(t, category),
       )
       .fold(0, (sum, t) => sum - t.delta);
 
-  /// Tồn cuối tháng [month] = tổng giao dịch tính tới hết tháng đó.
-  int closingStock(SupplyType type, DateTime month) {
+  /// Tồn cuối tháng [month] = tổng giao dịch tính tới hết tháng đó;
+  /// lọc theo [category] nếu có.
+  int closingStock(SupplyType type, DateTime month, {String? category}) {
     final endOfMonth = DateTime(month.year, month.month + 1);
     return txns
-        .where((t) => t.type == type && t.time.isBefore(endOfMonth))
+        .where(
+          (t) =>
+              t.type == type &&
+              t.time.isBefore(endOfMonth) &&
+              _matchCategory(t, category),
+        )
         .fold(0, (sum, t) => sum + t.delta);
   }
 

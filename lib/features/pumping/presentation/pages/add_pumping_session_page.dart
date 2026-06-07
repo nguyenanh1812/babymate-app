@@ -90,7 +90,7 @@ class _AddPumpingSessionPageState extends State<AddPumpingSessionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Thêm cữ hút')),
+      appBar: AppBar(title: const Text('Ghi cữ hút sữa')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [

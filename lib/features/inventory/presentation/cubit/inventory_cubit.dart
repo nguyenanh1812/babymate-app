@@ -43,19 +43,20 @@ class InventoryCubit extends Cubit<InventoryState> {
     );
   }
 
-  /// Mua thêm [qty] đơn vị của [type].
-  Future<void> buy(SupplyType type, int qty, {DateTime? time}) =>
-      _record(type, qty, time: time, note: 'Mua thêm');
+  /// Mua thêm [qty] đơn vị của [type]. Với bỉm truyền [category] (loại bỉm).
+  Future<void> buy(SupplyType type, int qty, {String? category}) =>
+      _record(type, qty, note: 'Nhập kho', category: category);
 
-  /// Dùng 1 đơn vị (bóc hộp sữa, hoặc trừ bỉm thủ công).
-  Future<void> useOne(SupplyType type, {String? note}) =>
-      _record(type, -1, note: note);
+  /// Dùng 1 đơn vị (bóc hộp sữa), theo loại [category] nếu có.
+  Future<void> useOne(SupplyType type, {String? category, String? note}) =>
+      _record(type, -1, note: note, category: category);
 
-  /// Tự trừ 1 bỉm khi ghi hoạt động thay tã.
-  Future<void> consumeDiaper() => _record(
+  /// Tự trừ 1 bỉm (loại [category]) khi ghi hoạt động thay tã.
+  Future<void> consumeDiaper({String? category}) => _record(
         SupplyType.diaper,
         -1,
         note: 'Thay tã',
+        category: category ?? kDefaultDiaperCategory,
       );
 
   Future<void> remove(String id) async {
@@ -76,8 +77,8 @@ class InventoryCubit extends Cubit<InventoryState> {
   Future<void> _record(
     SupplyType type,
     int delta, {
-    DateTime? time,
     String? note,
+    String? category,
   }) async {
     final babyId = state.babyId;
     if (babyId == null || delta == 0) return;
@@ -86,8 +87,9 @@ class InventoryCubit extends Cubit<InventoryState> {
       babyId: babyId,
       type: type,
       delta: delta,
-      time: time ?? DateTime.now(),
+      time: DateTime.now(),
       note: note,
+      category: category ?? defaultCategoryOf(type),
     );
     final result = await _addTransaction(txn);
     await result.fold(

@@ -31,18 +31,21 @@ class _MainShellState extends State<MainShell> {
         final baby = state.activeBaby;
         final babyId = baby?.id;
 
+        void openProfile() => Navigator.of(context).push(
+              MaterialPageRoute<void>(builder: (_) => const BabyListPage()),
+            );
+
         final tabs = <Widget>[
           const HomePage(),
           babyId == null
-              ? _RequireBaby(onAddBaby: () => _goTo(4))
+              ? _RequireBaby(onAddBaby: openProfile)
               : PumpingPage(babyId: babyId),
           babyId == null
-              ? _RequireBaby(onAddBaby: () => _goTo(4))
+              ? _RequireBaby(onAddBaby: openProfile)
               : GrowthPage(babyId: babyId),
           babyId == null
-              ? _RequireBaby(onAddBaby: () => _goTo(4))
+              ? _RequireBaby(onAddBaby: openProfile)
               : const InventoryPage(),
-          const BabyListPage(),
         ];
 
         return Scaffold(
@@ -70,11 +73,6 @@ class _MainShellState extends State<MainShell> {
                 icon: Icon(Icons.inventory_2_outlined),
                 selectedIcon: Icon(Icons.inventory_2_rounded),
                 label: 'Kho',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.child_care_outlined),
-                selectedIcon: Icon(Icons.child_care_rounded),
-                label: 'Hồ sơ',
               ),
             ],
           ),

@@ -57,5 +57,32 @@ void main() {
       // Tồn cuối tháng 6 = 30 + 20 - 1 - 1 = 48 (chưa tính giao dịch tháng 7).
       expect(state.closingStock(SupplyType.diaper, june), 48);
     });
+
+    test('báo cáo tháng tách theo loại', () {
+      SupplyTxn t(String cat, int delta) => SupplyTxn(
+            id: '$cat$delta',
+            babyId: 'b1',
+            type: SupplyType.diaper,
+            delta: delta,
+            time: DateTime(2026, 6, 5),
+            category: cat,
+          );
+      final state = InventoryState(
+        txns: [t('Thường', 20), t('Thường', -3), t('Đêm', 10), t('Đêm', -1)],
+      );
+      final june = DateTime(2026, 6);
+      expect(
+        state.boughtInMonth(SupplyType.diaper, june, category: 'Thường'),
+        20,
+      );
+      expect(
+        state.usedInMonth(SupplyType.diaper, june, category: 'Đêm'),
+        1,
+      );
+      expect(
+        state.closingStock(SupplyType.diaper, june, category: 'Đêm'),
+        9,
+      );
+    });
   });
 }

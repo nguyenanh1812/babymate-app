@@ -77,7 +77,7 @@ class _AddGrowthRecordPageState extends State<AddGrowthRecordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Thêm lần đo')),
+      appBar: AppBar(title: const Text('Ghi lần đo của bé')),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [

@@ -16,6 +16,11 @@ class NotificationService {
   static const String _channelName = 'Nhắc hút sữa';
   static const String _channelDesc = 'Thông báo nhắc giờ hút sữa hằng ngày';
 
+  static const String _sleepChannelId = 'sleep_reminders';
+  static const String _sleepChannelName = 'Nhắc bé dậy';
+  static const String _sleepChannelDesc =
+      'Thông báo nhắc trước khi bé dự kiến tỉnh giấc';
+
   /// Khởi tạo plugin + dữ liệu múi giờ. Gọi một lần khi bootstrap.
   ///
   /// Mặc định dùng múi giờ Việt Nam (Asia/Ho_Chi_Minh) vì app hướng tới
@@ -91,6 +96,41 @@ class NotificationService {
       );
     } catch (e, s) {
       AppLogger.e('Không lên lịch được thông báo $id', e, s);
+    }
+  }
+
+  /// Lên lịch một thông báo chạy đúng [when] (một lần, không lặp).
+  ///
+  /// Trả về true nếu đã đặt lịch (thời điểm còn ở tương lai).
+  Future<bool> scheduleOnce({
+    required int id,
+    required DateTime when,
+    required String title,
+    required String body,
+  }) async {
+    if (!when.isAfter(DateTime.now())) return false;
+    try {
+      await _plugin.zonedSchedule(
+        id,
+        title,
+        body,
+        tz.TZDateTime.from(when, tz.local),
+        const NotificationDetails(
+          android: AndroidNotificationDetails(
+            _sleepChannelId,
+            _sleepChannelName,
+            channelDescription: _sleepChannelDesc,
+            importance: Importance.high,
+            priority: Priority.high,
+          ),
+          iOS: DarwinNotificationDetails(),
+        ),
+        androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+      );
+      return true;
+    } catch (e, s) {
+      AppLogger.e('Không lên lịch được thông báo $id', e, s);
+      return false;
     }
   }
 

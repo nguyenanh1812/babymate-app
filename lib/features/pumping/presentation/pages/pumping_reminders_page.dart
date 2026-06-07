@@ -23,7 +23,7 @@ class PumpingRemindersPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lịch nhắc hút sữa')),
+      appBar: AppBar(title: const Text('Nhắc mẹ hút sữa')),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fab_reminders',
         onPressed: () => _addReminder(context),

@@ -14,6 +14,7 @@ class SupplyTxnModel extends HiveObject {
     required this.delta,
     required this.time,
     this.note,
+    this.category,
   });
 
   factory SupplyTxnModel.fromEntity(SupplyTxn t) => SupplyTxnModel(
@@ -23,6 +24,7 @@ class SupplyTxnModel extends HiveObject {
         delta: t.delta,
         time: t.time,
         note: t.note,
+        category: t.category,
       );
 
   @HiveField(0)
@@ -43,6 +45,9 @@ class SupplyTxnModel extends HiveObject {
   @HiveField(5)
   final String? note;
 
+  @HiveField(6)
+  final String? category;
+
   SupplyTxn toEntity() => SupplyTxn(
         id: id,
         babyId: babyId,
@@ -50,5 +55,6 @@ class SupplyTxnModel extends HiveObject {
         delta: delta,
         time: time,
         note: note,
+        category: category,
       );
 }

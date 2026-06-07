@@ -22,7 +22,7 @@ class _ActivityListPageState extends State<ActivityListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Lịch sử hoạt động')),
+      appBar: AppBar(title: const Text('Nhật ký của bé')),
       body: Column(
         children: [
           const SizedBox(height: AppSpacing.sm),

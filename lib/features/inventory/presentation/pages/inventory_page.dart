@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:intl/intl.dart';
 
+import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../domain/entities/supply_txn.dart';
 import '../cubit/inventory_cubit.dart';
@@ -42,16 +43,33 @@ class _InventoryPageState extends State<InventoryPage> {
   }
 
   Future<void> _buy(SupplyType type) async {
-    final qty = await _askQuantity(context, _meta(type));
-    if (qty != null && qty > 0 && mounted) {
-      await context.read<InventoryCubit>().buy(type, qty);
+    final categories = context.read<InventoryCubit>().state.categoriesOf(type);
+    final result = await _askPurchase(context, _meta(type), categories);
+    if (result != null && result.qty > 0 && mounted) {
+      await context
+          .read<InventoryCubit>()
+          .buy(type, result.qty, category: result.category);
+    }
+  }
+
+  /// Bóc 1 hộp sữa: nếu có nhiều loại thì hỏi loại nào.
+  Future<void> _openMilkBox() async {
+    final cubit = context.read<InventoryCubit>();
+    final categories = cubit.state.categoriesOf(SupplyType.milk);
+    String? category = categories.first;
+    if (categories.length > 1) {
+      category =
+          await _askCategory(context, 'Bóc hộp sữa loại nào?', categories);
+    }
+    if (category != null && mounted) {
+      await cubit.useOne(SupplyType.milk, category: category);
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Kho đồ')),
+      appBar: AppBar(title: const Text('Kho đồ của bé')),
       body: BlocBuilder<InventoryCubit, InventoryState>(
         builder: (context, state) {
           return ListView(
@@ -63,6 +81,13 @@ class _InventoryPageState extends State<InventoryPage> {
                 usedToday: state.usedTodayOf(SupplyType.diaper),
                 onBuy: () => _buy(SupplyType.diaper),
                 // Bỉm tự trừ khi ghi "Thay tã" nên không có nút dùng tay.
+                breakdown: [
+                  for (final c in state.categoriesOf(SupplyType.diaper))
+                    (
+                      label: c,
+                      stock: state.stockByCategory(SupplyType.diaper, c)
+                    ),
+                ],
               ),
               const SizedBox(height: AppSpacing.md),
               _StockCard(
@@ -70,9 +95,15 @@ class _InventoryPageState extends State<InventoryPage> {
                 stock: state.stockOf(SupplyType.milk),
                 usedToday: state.usedTodayOf(SupplyType.milk),
                 onBuy: () => _buy(SupplyType.milk),
-                onUseOne: () =>
-                    context.read<InventoryCubit>().useOne(SupplyType.milk),
+                onUseOne: _openMilkBox,
                 useLabel: 'Bóc 1 hộp',
+                breakdown: [
+                  for (final c in state.categoriesOf(SupplyType.milk))
+                    (
+                      label: c,
+                      stock: state.stockByCategory(SupplyType.milk, c)
+                    ),
+                ],
               ),
               const SizedBox(height: AppSpacing.xl),
               _MonthlyReport(
@@ -98,6 +129,7 @@ class _StockCard extends StatelessWidget {
     required this.onBuy,
     this.onUseOne,
     this.useLabel,
+    this.breakdown = const [],
   });
 
   final SupplyType type;
@@ -106,6 +138,9 @@ class _StockCard extends StatelessWidget {
   final VoidCallback onBuy;
   final VoidCallback? onUseOne;
   final String? useLabel;
+
+  /// Phân loại tồn kho (dùng cho bỉm: Thường/Đêm/...).
+  final List<({String label, int stock})> breakdown;
 
   @override
   Widget build(BuildContext context) {
@@ -157,6 +192,20 @@ class _StockCard extends StatelessWidget {
                   ),
                 ),
               ),
+            if (breakdown.length > 1) ...[
+              const SizedBox(height: AppSpacing.md),
+              Wrap(
+                spacing: AppSpacing.sm,
+                runSpacing: AppSpacing.xs,
+                children: [
+                  for (final b in breakdown)
+                    Chip(
+                      visualDensity: VisualDensity.compact,
+                      label: Text('${b.label}: ${b.stock} ${m.unit}'),
+                    ),
+                ],
+              ),
+            ],
             const SizedBox(height: AppSpacing.md),
             Row(
               children: [
@@ -174,7 +223,7 @@ class _StockCard extends StatelessWidget {
                   child: FilledButton.icon(
                     onPressed: onBuy,
                     icon: const Icon(Icons.add_shopping_cart),
-                    label: const Text('Mua thêm'),
+                    label: const Text('Nhập kho'),
                   ),
                 ),
               ],
@@ -228,49 +277,77 @@ class _MonthlyReport extends StatelessWidget {
                 ),
               ],
             ),
-            const SizedBox(height: AppSpacing.sm),
-            for (final type in SupplyType.values) _reportRow(theme, type),
+            const SizedBox(height: AppSpacing.md),
+            for (final type in SupplyType.values) ...[
+              Row(
+                children: [
+                  Icon(
+                    _meta(type).icon,
+                    size: 18,
+                    color: theme.colorScheme.primary,
+                  ),
+                  const SizedBox(width: AppSpacing.xs),
+                  Text(
+                    _meta(type).label,
+                    style: theme.textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              for (final category in state.categoriesOf(type))
+                _categoryRow(theme, type, category),
+              const SizedBox(height: AppSpacing.md),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _reportRow(ThemeData theme, SupplyType type) {
-    final m = _meta(type);
-    final bought = state.boughtInMonth(type, month);
-    final used = state.usedInMonth(type, month);
-    final closing = state.closingStock(type, month);
+  Widget _categoryRow(ThemeData theme, SupplyType type, String category) {
+    final bought = state.boughtInMonth(type, month, category: category);
+    final used = state.usedInMonth(type, month, category: category);
+    final closing = state.closingStock(type, month, category: category);
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    return Container(
+      margin: const EdgeInsets.only(bottom: AppSpacing.sm),
+      padding: const EdgeInsets.all(AppSpacing.md),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceVariant,
+        borderRadius: BorderRadius.circular(AppRadius.md),
+      ),
+      child: Row(
         children: [
-          Text(m.label, style: theme.textTheme.titleSmall),
-          const SizedBox(height: AppSpacing.xs),
-          Row(
-            children: [
-              _stat(theme, 'Đã mua', '+$bought'),
-              _stat(theme, 'Đã dùng', '-$used'),
-              _stat(theme, 'Tồn cuối tháng', '$closing ${m.unit}'),
-            ],
+          Expanded(
+            flex: 3,
+            child: Text(
+              category,
+              style: theme.textTheme.titleSmall,
+              overflow: TextOverflow.ellipsis,
+            ),
           ),
+          _stat(theme, 'Mua', '+$bought', AppColors.success),
+          _stat(theme, 'Dùng', '-$used', AppColors.warning),
+          _stat(theme, 'Tồn', '$closing', theme.colorScheme.primary),
         ],
       ),
     );
   }
 
-  Widget _stat(ThemeData theme, String label, String value) {
+  Widget _stat(ThemeData theme, String label, String value, Color color) {
     return Expanded(
+      flex: 2,
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label, style: theme.textTheme.bodySmall),
+          const SizedBox(height: AppSpacing.xxs),
           Text(
             value,
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.w700,
+              color: color,
             ),
           ),
         ],
@@ -279,36 +356,109 @@ class _MonthlyReport extends StatelessWidget {
   }
 }
 
-/// Hỏi số lượng mua thêm bằng dialog.
-Future<int?> _askQuantity(
+/// Hỏi loại + số lượng khi mua thêm (dùng chung cho bỉm và sữa).
+Future<({String category, int qty})?> _askPurchase(
   BuildContext context,
   ({String label, String unit, IconData icon}) meta,
+  List<String> categories,
 ) {
-  final controller = TextEditingController();
-  return showDialog<int>(
+  const newOption = '+ Loại mới';
+  final qtyController = TextEditingController();
+  final newCatController = TextEditingController();
+  var selected = categories.isNotEmpty ? categories.first : newOption;
+
+  return showDialog<({String category, int qty})>(
     context: context,
     builder: (context) {
-      return AlertDialog(
-        title: Text('Mua thêm ${meta.label}'),
-        content: TextField(
-          controller: controller,
-          autofocus: true,
-          keyboardType: TextInputType.number,
-          decoration: InputDecoration(
-            labelText: 'Số lượng',
-            suffixText: meta.unit,
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Huỷ'),
-          ),
-          FilledButton(
-            onPressed: () =>
-                Navigator.pop(context, int.tryParse(controller.text.trim())),
-            child: const Text('Thêm'),
-          ),
+      return StatefulBuilder(
+        builder: (context, setState) {
+          final isNew = selected == newOption;
+          return AlertDialog(
+            title: Text('Nhập kho ${meta.label}'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  DropdownButtonFormField<String>(
+                    value: selected,
+                    isExpanded: true,
+                    decoration:
+                        InputDecoration(labelText: 'Loại ${meta.label}'),
+                    items: [
+                      for (final c in categories)
+                        DropdownMenuItem(value: c, child: Text(c)),
+                      const DropdownMenuItem(
+                        value: newOption,
+                        child: Text(newOption),
+                      ),
+                    ],
+                    onChanged: (v) => setState(() => selected = v ?? selected),
+                  ),
+                  if (isNew) ...[
+                    const SizedBox(height: AppSpacing.md),
+                    TextField(
+                      controller: newCatController,
+                      autofocus: true,
+                      decoration:
+                          const InputDecoration(labelText: 'Tên loại mới'),
+                    ),
+                  ],
+                  const SizedBox(height: AppSpacing.md),
+                  TextField(
+                    controller: qtyController,
+                    autofocus: !isNew,
+                    keyboardType: TextInputType.number,
+                    decoration: InputDecoration(
+                      labelText: 'Số lượng',
+                      suffixText: meta.unit,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Huỷ'),
+              ),
+              FilledButton(
+                onPressed: () {
+                  final qty = int.tryParse(qtyController.text.trim()) ?? 0;
+                  final category =
+                      isNew ? newCatController.text.trim() : selected;
+                  if (qty <= 0 || category.isEmpty) {
+                    Navigator.pop(context);
+                    return;
+                  }
+                  Navigator.pop(context, (category: category, qty: qty));
+                },
+                child: const Text('Thêm'),
+              ),
+            ],
+          );
+        },
+      );
+    },
+  );
+}
+
+/// Hỏi chọn một loại trong danh sách (khi bóc hộp sữa có nhiều loại).
+Future<String?> _askCategory(
+  BuildContext context,
+  String title,
+  List<String> categories,
+) {
+  return showDialog<String>(
+    context: context,
+    builder: (context) {
+      return SimpleDialog(
+        title: Text(title),
+        children: [
+          for (final c in categories)
+            SimpleDialogOption(
+              onPressed: () => Navigator.pop(context, c),
+              child: Text(c),
+            ),
         ],
       );
     },

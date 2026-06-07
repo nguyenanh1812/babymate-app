@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
+import '../../../../core/di/injection.dart';
+import '../../../../core/notifications/notification_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../inventory/domain/entities/supply_txn.dart';
 import '../../../inventory/presentation/cubit/inventory_cubit.dart';
 import '../../domain/entities/activity.dart';
 import '../cubit/activity_cubit.dart';
@@ -25,16 +28,23 @@ class AddActivityPage extends StatefulWidget {
 class _AddActivityPageState extends State<AddActivityPage> {
   final _noteController = TextEditingController();
   final _amountController = TextEditingController();
+  final _leadController = TextEditingController(text: '25');
 
   late TimeOfDay _time = TimeOfDay.now();
   TimeOfDay? _endTime;
+  bool _remindBeforeWake = false;
   FeedingType _feedingType = FeedingType.breast;
   DiaperType _diaperType = DiaperType.wet;
+  String _diaperCategory = kDefaultDiaperCategory;
+
+  /// Số phút nhắc trước mặc định nếu người dùng không nhập.
+  static const int _defaultLeadMinutes = 25;
 
   @override
   void dispose() {
     _noteController.dispose();
     _amountController.dispose();
+    _leadController.dispose();
     super.dispose();
   }
 
@@ -64,6 +74,26 @@ class _AddActivityPageState extends State<AddActivityPage> {
     });
   }
 
+  /// Đặt thông báo trước số phút người dùng nhập so với giờ kết thúc
+  /// (giờ bé dự kiến tỉnh).
+  Future<void> _scheduleWakeReminder() async {
+    var wake = _toDateTime(_endTime!);
+    if (!wake.isAfter(DateTime.now())) {
+      wake = wake.add(const Duration(days: 1));
+    }
+    final lead =
+        int.tryParse(_leadController.text.trim()) ?? _defaultLeadMinutes;
+    final remindAt = wake.subtract(Duration(minutes: lead));
+    final notifications = getIt<NotificationService>();
+    await notifications.requestPermission();
+    await notifications.scheduleOnce(
+      id: DateTime.now().millisecondsSinceEpoch % 1000000000,
+      when: remindAt,
+      title: 'Con sắp tỉnh giấc 💤',
+      body: 'Bé dự kiến dậy lúc ${wake.hhmm}, mẹ chuẩn bị đồ ăn nhé!',
+    );
+  }
+
   void _submit() {
     final cubit = context.read<ActivityCubit>();
     final note = _noteController.text.trim();
@@ -87,6 +117,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           endTime: _endTime == null ? null : _toDateTime(_endTime!),
           note: noteOrNull,
         );
+        // Nếu bật nhắc và có giờ kết thúc, đặt nhắc trước số phút đã nhập.
+        if (_remindBeforeWake && _endTime != null) _scheduleWakeReminder();
       case ActivityType.diaper:
         cubit.logDiaper(
           babyId: widget.babyId,
@@ -94,8 +126,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           diaperType: _diaperType,
           note: noteOrNull,
         );
-        // Mỗi lần thay tã tự trừ 1 bỉm trong kho.
-        context.read<InventoryCubit>().consumeDiaper();
+        // Mỗi lần thay tã tự trừ 1 bỉm trong kho (theo loại đã chọn).
+        context.read<InventoryCubit>().consumeDiaper(category: _diaperCategory);
     }
     Navigator.of(context).pop();
   }
@@ -157,12 +189,43 @@ class _AddActivityPageState extends State<AddActivityPage> {
         return [
           const SizedBox(height: AppSpacing.sm),
           _timeTile(
-            label: 'Kết thúc',
+            label: 'Kết thúc (giờ bé dự kiến tỉnh)',
             value: _endTime == null ? 'Chưa đặt' : _toDateTime(_endTime!).hhmm,
             onPick: () => _pickTime(isEnd: true),
           ),
+          SwitchListTile(
+            contentPadding: EdgeInsets.zero,
+            secondary: const Icon(Icons.notifications_active_outlined),
+            title: const Text('Nhắc con sắp tỉnh giấc'),
+            subtitle: Text(
+              _endTime == null
+                  ? 'Đặt giờ kết thúc để bật nhắc'
+                  : 'Báo trước khi bé dậy để mẹ chuẩn bị đồ ăn',
+            ),
+            value: _remindBeforeWake && _endTime != null,
+            onChanged: _endTime == null
+                ? null
+                : (v) => setState(() => _remindBeforeWake = v),
+          ),
+          if (_remindBeforeWake && _endTime != null)
+            Padding(
+              padding: const EdgeInsets.only(top: AppSpacing.sm),
+              child: TextField(
+                controller: _leadController,
+                keyboardType: TextInputType.number,
+                decoration: const InputDecoration(
+                  labelText: 'Báo trước',
+                  suffixText: 'phút',
+                ),
+              ),
+            ),
         ];
       case ActivityType.diaper:
+        final categories =
+            context.read<InventoryCubit>().state.diaperCategories();
+        if (!categories.contains(_diaperCategory)) {
+          _diaperCategory = kDefaultDiaperCategory;
+        }
         return [
           const SizedBox(height: AppSpacing.md),
           SegmentedButton<DiaperType>(
@@ -173,6 +236,17 @@ class _AddActivityPageState extends State<AddActivityPage> {
             ],
             selected: {_diaperType},
             onSelectionChanged: (s) => setState(() => _diaperType = s.first),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DropdownButtonFormField<String>(
+            value: _diaperCategory,
+            decoration: const InputDecoration(labelText: 'Loại bỉm'),
+            items: [
+              for (final c in categories)
+                DropdownMenuItem(value: c, child: Text(c)),
+            ],
+            onChanged: (v) =>
+                setState(() => _diaperCategory = v ?? _diaperCategory),
           ),
         ];
     }

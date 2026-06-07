@@ -51,7 +51,7 @@ class BabyListPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Hồ sơ bé')),
+      appBar: AppBar(title: const Text('Bé yêu của mẹ')),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => _openAddBaby(context),
         icon: const Icon(Icons.add),

@@ -41,6 +41,13 @@ class HomePage extends StatelessWidget {
           return Scaffold(
             appBar: AppBar(
               title: Text(baby == null ? 'Con ơi' : '${baby.name} ơi'),
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.settings_outlined),
+                  tooltip: 'Cài đặt',
+                  onPressed: () => _push(context, const BabyListPage()),
+                ),
+              ],
             ),
             body: baby == null ? const _NoBaby() : _Dashboard(baby: baby),
           );
