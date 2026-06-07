@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../inventory/presentation/cubit/inventory_cubit.dart';
 import '../../domain/entities/activity.dart';
 import '../cubit/activity_cubit.dart';
 
@@ -93,6 +94,8 @@ class _AddActivityPageState extends State<AddActivityPage> {
           diaperType: _diaperType,
           note: noteOrNull,
         );
+        // Mỗi lần thay tã tự trừ 1 bỉm trong kho.
+        context.read<InventoryCubit>().consumeDiaper();
     }
     Navigator.of(context).pop();
   }

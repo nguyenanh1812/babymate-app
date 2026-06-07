@@ -30,6 +30,7 @@ class GrowthPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Tăng trưởng')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_growth',
         onPressed: () => _openAdd(context),
         icon: const Icon(Icons.add),
         label: const Text('Thêm lần đo'),

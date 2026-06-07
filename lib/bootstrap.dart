@@ -12,6 +12,7 @@ import 'core/utils/logger.dart';
 import 'features/activity/activity_injection.dart';
 import 'features/baby/baby_injection.dart';
 import 'features/growth/growth_injection.dart';
+import 'features/inventory/inventory_injection.dart';
 import 'features/pumping/pumping_injection.dart';
 
 /// Khởi tạo mọi thứ cần thiết trước khi chạy app, rồi gọi [builder] để dựng
@@ -42,6 +43,7 @@ Future<void> bootstrap(
   await registerActivityFeature();
   await registerGrowthFeature();
   await registerPumpingFeature();
+  await registerInventoryFeature();
 
   runApp(builder());
 }

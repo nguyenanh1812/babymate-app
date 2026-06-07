@@ -22,6 +22,9 @@ abstract final class StorageKeys {
   /// Box lưu các mốc nhắc hút sữa.
   static const String pumpingReminderBox = 'pumping_reminder_box';
 
+  /// Box lưu giao dịch kho (bỉm/sữa).
+  static const String supplyTxnBox = 'supply_txn_box';
+
   // Key trong settingsBox
   static const String themeMode = 'theme_mode';
   static const String localeCode = 'locale_code';

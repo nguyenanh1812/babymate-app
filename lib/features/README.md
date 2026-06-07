@@ -39,6 +39,8 @@ features/
 - **`pumping/`** — Hút sữa: nhật ký cữ hút (giờ, lượng ml, bên trái/phải/cả hai,
   tổng hôm nay) và lịch nhắc hằng ngày qua thông báo cục bộ
   (`flutter_local_notifications`, dịch vụ ở `core/notifications/`).
+- **`inventory/`** — Kho bỉm/sữa: tồn kho qua nhật ký giao dịch (nhập/dùng),
+  bỉm tự trừ khi ghi "Thay tã", mua thêm/bóc hộp thủ công, báo cáo theo tháng.
 - **`home/`** — Trang chủ: tổng quan hôm nay + ghi nhanh (chỉ có `presentation`,
   tái dùng domain/data của `baby` và `activity`).
 

@@ -7,6 +7,7 @@ import 'core/theme/app_theme.dart';
 import 'features/activity/presentation/cubit/activity_cubit.dart';
 import 'features/baby/presentation/cubit/baby_cubit.dart';
 import 'features/growth/presentation/cubit/growth_cubit.dart';
+import 'features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'features/pumping/presentation/cubit/pumping_cubit.dart';
 import 'features/pumping/presentation/cubit/pumping_reminder_cubit.dart';
 import 'l10n/app_localizations.dart';
@@ -53,6 +54,14 @@ class BabyMateApp extends StatelessWidget {
         ),
         BlocProvider<PumpingReminderCubit>(
           create: (_) => getIt<PumpingReminderCubit>()..load(),
+        ),
+        BlocProvider<InventoryCubit>(
+          create: (_) {
+            final cubit = getIt<InventoryCubit>();
+            final activeId = getIt<BabyCubit>().state.activeBabyId;
+            if (activeId != null) cubit.load(activeId);
+            return cubit;
+          },
         ),
       ],
       child: MaterialApp.router(

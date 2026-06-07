@@ -5,6 +5,7 @@ import '../../../../core/theme/app_spacing.dart';
 import '../../../baby/presentation/cubit/baby_cubit.dart';
 import '../../../baby/presentation/pages/baby_list_page.dart';
 import '../../../growth/presentation/pages/growth_page.dart';
+import '../../../inventory/presentation/pages/inventory_page.dart';
 import '../../../pumping/presentation/pages/pumping_page.dart';
 import 'home_page.dart';
 
@@ -33,11 +34,14 @@ class _MainShellState extends State<MainShell> {
         final tabs = <Widget>[
           const HomePage(),
           babyId == null
-              ? _RequireBaby(onAddBaby: () => _goTo(3))
+              ? _RequireBaby(onAddBaby: () => _goTo(4))
               : PumpingPage(babyId: babyId),
           babyId == null
-              ? _RequireBaby(onAddBaby: () => _goTo(3))
+              ? _RequireBaby(onAddBaby: () => _goTo(4))
               : GrowthPage(babyId: babyId),
+          babyId == null
+              ? _RequireBaby(onAddBaby: () => _goTo(4))
+              : const InventoryPage(),
           const BabyListPage(),
         ];
 
@@ -63,8 +67,13 @@ class _MainShellState extends State<MainShell> {
                 label: 'Tăng trưởng',
               ),
               NavigationDestination(
-                icon: Icon(Icons.people_alt_outlined),
-                selectedIcon: Icon(Icons.people_alt_rounded),
+                icon: Icon(Icons.inventory_2_outlined),
+                selectedIcon: Icon(Icons.inventory_2_rounded),
+                label: 'Kho',
+              ),
+              NavigationDestination(
+                icon: Icon(Icons.child_care_outlined),
+                selectedIcon: Icon(Icons.child_care_rounded),
                 label: 'Hồ sơ',
               ),
             ],

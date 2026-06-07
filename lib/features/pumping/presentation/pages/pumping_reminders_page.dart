@@ -25,6 +25,7 @@ class PumpingRemindersPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Lịch nhắc hút sữa')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_reminders',
         onPressed: () => _addReminder(context),
         icon: const Icon(Icons.add_alarm),
         label: const Text('Thêm giờ nhắc'),

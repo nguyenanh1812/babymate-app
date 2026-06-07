@@ -13,6 +13,7 @@ import '../../../baby/domain/entities/baby.dart';
 import '../../../baby/presentation/cubit/baby_cubit.dart';
 import '../../../baby/presentation/pages/baby_list_page.dart';
 import '../../../growth/presentation/cubit/growth_cubit.dart';
+import '../../../inventory/presentation/cubit/inventory_cubit.dart';
 import '../../../pumping/presentation/cubit/pumping_cubit.dart';
 import '../widgets/today_summary.dart';
 
@@ -31,13 +32,16 @@ class HomePage extends StatelessWidget {
           context.read<ActivityCubit>().load(id);
           context.read<GrowthCubit>().load(id);
           context.read<PumpingCubit>().load(id);
+          context.read<InventoryCubit>().load(id);
         }
       },
       child: BlocBuilder<BabyCubit, BabyState>(
         builder: (context, babyState) {
           final baby = babyState.activeBaby;
           return Scaffold(
-            appBar: AppBar(title: const Text('Con ơi')),
+            appBar: AppBar(
+              title: Text(baby == null ? 'Con ơi' : '${baby.name} ơi'),
+            ),
             body: baby == null ? const _NoBaby() : _Dashboard(baby: baby),
           );
         },

@@ -2,24 +2,34 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/period_filter.dart';
 import '../cubit/pumping_cubit.dart';
+import '../widgets/pumping_daily_chart.dart';
 import '../widgets/pumping_session_tile.dart';
 import 'add_pumping_session_page.dart';
 import 'pumping_reminders_page.dart';
 
-/// Màn hình nhật ký hút sữa: tổng hôm nay + danh sách các cữ hút.
-class PumpingPage extends StatelessWidget {
+/// Màn hình nhật ký hút sữa: tổng hôm nay + biểu đồ theo ngày + danh sách
+/// các cữ hút lọc theo thời gian.
+class PumpingPage extends StatefulWidget {
   const PumpingPage({required this.babyId, super.key});
 
   final String babyId;
 
-  void _openAdd(BuildContext context) {
+  @override
+  State<PumpingPage> createState() => _PumpingPageState();
+}
+
+class _PumpingPageState extends State<PumpingPage> {
+  TimePeriod _period = TimePeriod.week;
+
+  void _openAdd() {
     final cubit = context.read<PumpingCubit>();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
-          child: AddPumpingSessionPage(babyId: babyId),
+          child: AddPumpingSessionPage(babyId: widget.babyId),
         ),
       ),
     );
@@ -43,7 +53,8 @@ class PumpingPage extends StatelessWidget {
         ],
       ),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAdd(context),
+        heroTag: 'fab_pumping',
+        onPressed: _openAdd,
         icon: const Icon(Icons.add),
         label: const Text('Thêm cữ hút'),
       ),
@@ -52,26 +63,44 @@ class PumpingPage extends StatelessWidget {
           if (state.status == PumpingStatus.loading && state.sessions.isEmpty) {
             return const Center(child: CircularProgressIndicator());
           }
-          final today = state.today;
+
+          final filtered =
+              state.sessions.where((s) => _period.contains(s.time)).toList();
+
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
-              _TodayTotal(totalMl: state.totalTodayMl, count: today.length),
+              _TodayTotal(
+                totalMl: state.totalTodayMl,
+                count: state.today.length,
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              PeriodFilter(
+                selected: _period,
+                onChanged: (p) => setState(() => _period = p),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(AppSpacing.lg),
+                  child: PumpingDailyChart(sessions: filtered),
+                ),
+              ),
               const SizedBox(height: AppSpacing.lg),
               Text(
                 'Các cữ hút',
                 style: Theme.of(context).textTheme.titleMedium,
               ),
               const SizedBox(height: AppSpacing.xs),
-              if (state.sessions.isEmpty)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: AppSpacing.xl),
+              if (filtered.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
                   child: Center(
-                    child: Text('Chưa có cữ hút nào.\nNhấn "Thêm cữ hút".'),
+                    child: Text('Không có cữ hút trong "${_period.label}".'),
                   ),
                 )
               else
-                ...state.sessions.map(
+                ...filtered.map(
                   (s) => PumpingSessionTile(
                     session: s,
                     onDelete: () => context.read<PumpingCubit>().remove(s.id),
