@@ -50,9 +50,10 @@ class GrowthCubit extends Cubit<GrowthState> {
     double? heightCm,
     double? headCircumferenceCm,
     String? note,
+    String? id,
   }) async {
     final record = GrowthRecord(
-      id: _uuid.v4(),
+      id: id ?? _uuid.v4(),
       babyId: babyId,
       date: date,
       weightKg: weightKg,

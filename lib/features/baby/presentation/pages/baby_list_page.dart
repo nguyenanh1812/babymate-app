@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../cubit/baby_cubit.dart';
 import '../widgets/baby_card.dart';
 import 'add_baby_page.dart';
@@ -63,7 +64,11 @@ class BabyListPage extends StatelessWidget {
             return const Center(child: CircularProgressIndicator());
           }
           if (!state.hasBaby) {
-            return const _EmptyState();
+            return const AppEmptyState(
+              icon: Icons.child_care_rounded,
+              title: 'Chưa có hồ sơ bé nào',
+              message: 'Thêm bé đầu tiên để bắt đầu hành trình chăm sóc nhé!',
+            );
           }
           return ListView.builder(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -79,34 +84,6 @@ class BabyListPage extends StatelessWidget {
             },
           );
         },
-      ),
-    );
-  }
-}
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.child_care, size: 64, color: theme.colorScheme.primary),
-            const SizedBox(height: AppSpacing.lg),
-            Text('Chưa có hồ sơ bé nào', style: theme.textTheme.titleMedium),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Thêm bé đầu tiên để bắt đầu ghi nhật ký chăm sóc.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-          ],
-        ),
       ),
     );
   }

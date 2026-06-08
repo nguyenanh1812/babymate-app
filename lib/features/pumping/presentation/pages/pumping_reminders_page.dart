@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../cubit/pumping_reminder_cubit.dart';
 
 /// Màn hình quản lý các mốc nhắc hút sữa hằng ngày.
@@ -33,15 +34,10 @@ class PumpingRemindersPage extends StatelessWidget {
       body: BlocBuilder<PumpingReminderCubit, PumpingReminderState>(
         builder: (context, state) {
           if (state.reminders.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  'Chưa có giờ nhắc nào.\n'
-                  'Nhấn "Thêm giờ nhắc" để được nhắc hút sữa mỗi ngày.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
+            return const AppEmptyState(
+              icon: Icons.alarm_outlined,
+              title: 'Chưa có giờ nhắc nào',
+              message: 'Thêm giờ nhắc để mẹ không bỏ lỡ cữ hút sữa nào nhé!',
             );
           }
           return ListView(

@@ -3,7 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../activity/domain/entities/activity.dart';
+import '../../../activity/presentation/activity_actions.dart';
 import '../../../activity/presentation/cubit/activity_cubit.dart';
 import '../../../activity/presentation/pages/activity_list_page.dart';
 import '../../../activity/presentation/pages/add_activity_page.dart';
@@ -299,7 +301,8 @@ class _TodayList extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: ActivityTimeline(
             activities: today,
-            onDelete: (a) => context.read<ActivityCubit>().remove(a.id),
+            onTap: (a) => openEditActivity(context, a),
+            onDelete: (a) => deleteActivity(context, a),
           ),
         );
       },
@@ -340,33 +343,14 @@ class _NoBaby extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(AppSpacing.xl),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.child_care, size: 72, color: theme.colorScheme.primary),
-            const SizedBox(height: AppSpacing.lg),
-            Text(
-              'Chào mừng đến với Con ơi',
-              style: theme.textTheme.headlineSmall,
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            Text(
-              'Thêm hồ sơ bé đầu tiên để bắt đầu ghi nhật ký chăm sóc.',
-              textAlign: TextAlign.center,
-              style: theme.textTheme.bodyMedium,
-            ),
-            const SizedBox(height: AppSpacing.xl),
-            FilledButton.icon(
-              onPressed: () => _push(context, const BabyListPage()),
-              icon: const Icon(Icons.add),
-              label: const Text('Thêm bé'),
-            ),
-          ],
-        ),
+    return AppEmptyState(
+      icon: Icons.child_care_rounded,
+      title: 'Chào mừng đến với Con ơi 👶',
+      message: 'Thêm hồ sơ bé đầu tiên để bắt đầu hành trình chăm sóc nhé!',
+      action: FilledButton.icon(
+        onPressed: () => _push(context, const BabyListPage()),
+        icon: const Icon(Icons.add),
+        label: const Text('Thêm bé'),
       ),
     );
   }

@@ -10,17 +10,20 @@ class ActivityTile extends StatelessWidget {
   const ActivityTile({
     required this.activity,
     this.onDelete,
+    this.onTap,
     super.key,
   });
 
   final Activity activity;
   final VoidCallback? onDelete;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final visual = ActivityVisual.of(activity.type);
     return ListTile(
+      onTap: onTap,
       leading: CircleAvatar(
         backgroundColor: visual.softColor,
         child: Icon(visual.icon, color: visual.color),

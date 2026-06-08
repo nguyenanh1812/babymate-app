@@ -3,13 +3,17 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../domain/entities/growth_record.dart';
 import '../cubit/growth_cubit.dart';
 
-/// Form thêm một lần đo tăng trưởng cho [babyId].
+/// Form ghi/sửa một lần đo tăng trưởng cho [babyId].
+///
+/// Truyền [existing] để vào chế độ chỉnh sửa (giữ nguyên id khi lưu).
 class AddGrowthRecordPage extends StatefulWidget {
-  const AddGrowthRecordPage({required this.babyId, super.key});
+  const AddGrowthRecordPage({required this.babyId, this.existing, super.key});
 
   final String babyId;
+  final GrowthRecord? existing;
 
   @override
   State<AddGrowthRecordPage> createState() => _AddGrowthRecordPageState();
@@ -21,8 +25,23 @@ class _AddGrowthRecordPageState extends State<AddGrowthRecordPage> {
   final _headController = TextEditingController();
   final _noteController = TextEditingController();
 
-  DateTime _date = DateTime.now();
+  late DateTime _date;
   String? _error;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _date = e?.date ?? DateTime.now();
+    if (e?.weightKg != null) _weightController.text = '${e!.weightKg}';
+    if (e?.heightCm != null) _heightController.text = '${e!.heightCm}';
+    if (e?.headCircumferenceCm != null) {
+      _headController.text = '${e!.headCircumferenceCm}';
+    }
+    if (e?.note != null) _noteController.text = e!.note!;
+  }
 
   @override
   void dispose() {
@@ -70,6 +89,7 @@ class _AddGrowthRecordPageState extends State<AddGrowthRecordPage> {
           heightCm: height,
           headCircumferenceCm: head,
           note: note.isEmpty ? null : note,
+          id: widget.existing?.id,
         );
     Navigator.of(context).pop();
   }
@@ -77,7 +97,9 @@ class _AddGrowthRecordPageState extends State<AddGrowthRecordPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ghi lần đo của bé')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Sửa lần đo' : 'Ghi lần đo của bé'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
@@ -111,7 +133,10 @@ class _AddGrowthRecordPageState extends State<AddGrowthRecordPage> {
             ),
           ],
           const SizedBox(height: AppSpacing.xxl),
-          FilledButton(onPressed: _submit, child: const Text('Lưu')),
+          FilledButton(
+            onPressed: _submit,
+            child: Text(_isEditing ? 'Cập nhật' : 'Lưu'),
+          ),
         ],
       ),
     );

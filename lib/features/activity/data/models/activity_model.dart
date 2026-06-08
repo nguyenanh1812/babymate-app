@@ -19,6 +19,7 @@ class ActivityModel extends HiveObject {
     this.feedingTypeIndex,
     this.diaperTypeIndex,
     this.note,
+    this.diaperCategory,
   });
 
   factory ActivityModel.fromEntity(Activity a) => ActivityModel(
@@ -31,6 +32,7 @@ class ActivityModel extends HiveObject {
         feedingTypeIndex: a.feedingType?.index,
         diaperTypeIndex: a.diaperType?.index,
         note: a.note,
+        diaperCategory: a.diaperCategory,
       );
 
   @HiveField(0)
@@ -60,6 +62,9 @@ class ActivityModel extends HiveObject {
   @HiveField(8)
   final String? note;
 
+  @HiveField(9)
+  final String? diaperCategory;
+
   Activity toEntity() => Activity(
         id: id,
         babyId: babyId,
@@ -74,5 +79,6 @@ class ActivityModel extends HiveObject {
             ? null
             : DiaperType.values[diaperTypeIndex!],
         note: note,
+        diaperCategory: diaperCategory,
       );
 }

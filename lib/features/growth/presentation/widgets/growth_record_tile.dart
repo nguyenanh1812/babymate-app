@@ -8,16 +8,19 @@ class GrowthRecordTile extends StatelessWidget {
   const GrowthRecordTile({
     required this.record,
     this.onDelete,
+    this.onTap,
     super.key,
   });
 
   final GrowthRecord record;
   final VoidCallback? onDelete;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListTile(
+      onTap: onTap,
       leading: const CircleAvatar(child: Icon(Icons.monitor_weight_outlined)),
       title: Text(record.date.ddMMyyyy, style: theme.textTheme.titleMedium),
       subtitle: Text(_metrics),

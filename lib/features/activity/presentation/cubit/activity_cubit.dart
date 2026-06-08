@@ -53,10 +53,11 @@ class ActivityCubit extends Cubit<ActivityState> {
     required FeedingType feedingType,
     int? amountMl,
     String? note,
+    String? id,
   }) {
     return _save(
       Activity(
-        id: _uuid.v4(),
+        id: id ?? _uuid.v4(),
         babyId: babyId,
         type: ActivityType.feeding,
         time: time,
@@ -72,10 +73,11 @@ class ActivityCubit extends Cubit<ActivityState> {
     required DateTime time,
     DateTime? endTime,
     String? note,
+    String? id,
   }) {
     return _save(
       Activity(
-        id: _uuid.v4(),
+        id: id ?? _uuid.v4(),
         babyId: babyId,
         type: ActivityType.sleep,
         time: time,
@@ -89,15 +91,18 @@ class ActivityCubit extends Cubit<ActivityState> {
     required String babyId,
     required DateTime time,
     required DiaperType diaperType,
+    String? diaperCategory,
     String? note,
+    String? id,
   }) {
     return _save(
       Activity(
-        id: _uuid.v4(),
+        id: id ?? _uuid.v4(),
         babyId: babyId,
         type: ActivityType.diaper,
         time: time,
         diaperType: diaperType,
+        diaperCategory: diaperCategory,
         note: note,
       ),
     );

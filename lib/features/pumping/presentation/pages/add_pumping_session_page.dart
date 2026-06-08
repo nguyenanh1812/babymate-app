@@ -2,17 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/date_time_picker.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../domain/entities/pumping_session.dart';
 import '../cubit/pumping_cubit.dart';
 
-/// Form thêm một cữ hút sữa cho [babyId].
+/// Form ghi/sửa một cữ hút sữa cho [babyId].
 ///
 /// Nhập lượng sữa bên trái và bên phải; tổng tự cộng nhưng vẫn cho phép
-/// chỉnh tay (khi mẹ chỉ đo được tổng).
+/// chỉnh tay. Truyền [existing] để vào chế độ chỉnh sửa.
 class AddPumpingSessionPage extends StatefulWidget {
-  const AddPumpingSessionPage({required this.babyId, super.key});
+  const AddPumpingSessionPage({
+    required this.babyId,
+    this.existing,
+    super.key,
+  });
 
   final String babyId;
+  final PumpingSession? existing;
 
   @override
   State<AddPumpingSessionPage> createState() => _AddPumpingSessionPageState();
@@ -24,14 +31,25 @@ class _AddPumpingSessionPageState extends State<AddPumpingSessionPage> {
   final _totalController = TextEditingController();
   final _noteController = TextEditingController();
 
-  DateTime _time = DateTime.now();
+  late DateTime _time;
 
   /// True khi người dùng tự sửa ô tổng → ngừng tự cộng để khỏi ghi đè.
   bool _totalEditedManually = false;
 
+  bool get _isEditing => widget.existing != null;
+
   @override
   void initState() {
     super.initState();
+    final e = widget.existing;
+    _time = e?.time ?? DateTime.now();
+    if (e?.leftMl != null) _leftController.text = '${e!.leftMl}';
+    if (e?.rightMl != null) _rightController.text = '${e!.rightMl}';
+    if (e?.totalMl != null) {
+      _totalController.text = '${e!.totalMl}';
+      _totalEditedManually = true;
+    }
+    if (e?.note != null) _noteController.text = e!.note!;
     _leftController.addListener(_recomputeTotal);
     _rightController.addListener(_recomputeTotal);
   }
@@ -56,22 +74,8 @@ class _AddPumpingSessionPageState extends State<AddPumpingSessionPage> {
   int? _parse(TextEditingController c) => int.tryParse(c.text.trim());
 
   Future<void> _pickTime() async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay.fromDateTime(_time),
-      helpText: 'Chọn giờ hút',
-    );
-    if (picked != null) {
-      setState(() {
-        _time = DateTime(
-          _time.year,
-          _time.month,
-          _time.day,
-          picked.hour,
-          picked.minute,
-        );
-      });
-    }
+    final picked = await pickDateTime(context, initial: _time);
+    if (picked != null) setState(() => _time = picked);
   }
 
   void _submit() {
@@ -83,6 +87,7 @@ class _AddPumpingSessionPageState extends State<AddPumpingSessionPage> {
           rightMl: _parse(_rightController),
           totalMl: _parse(_totalController),
           note: note.isEmpty ? null : note,
+          id: widget.existing?.id,
         );
     Navigator.of(context).pop();
   }
@@ -90,15 +95,17 @@ class _AddPumpingSessionPageState extends State<AddPumpingSessionPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Ghi cữ hút sữa')),
+      appBar: AppBar(
+        title: Text(_isEditing ? 'Sửa cữ hút sữa' : 'Ghi cữ hút sữa'),
+      ),
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
           ListTile(
             contentPadding: EdgeInsets.zero,
             leading: const Icon(Icons.schedule),
-            title: const Text('Giờ hút'),
-            subtitle: Text(_time.hhmm),
+            title: const Text('Thời gian'),
+            subtitle: Text('${_time.ddMMyyyy} ${_time.hhmm}'),
             trailing:
                 TextButton(onPressed: _pickTime, child: const Text('Chọn')),
           ),
@@ -125,7 +132,10 @@ class _AddPumpingSessionPageState extends State<AddPumpingSessionPage> {
             maxLines: 2,
           ),
           const SizedBox(height: AppSpacing.xxl),
-          FilledButton(onPressed: _submit, child: const Text('Lưu')),
+          FilledButton(
+            onPressed: _submit,
+            child: Text(_isEditing ? 'Cập nhật' : 'Lưu'),
+          ),
         ],
       ),
     );

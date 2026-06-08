@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/period_filter.dart';
+import '../../domain/entities/growth_record.dart';
 import '../cubit/growth_cubit.dart';
 import '../widgets/growth_chart.dart';
 import '../widgets/growth_record_tile.dart';
@@ -23,13 +25,16 @@ class _GrowthPageState extends State<GrowthPage> {
   TimePeriod _period = TimePeriod.all;
   GrowthMetric _metric = GrowthMetric.weight;
 
-  void _openAdd() {
+  void _openForm({GrowthRecord? existing}) {
     final cubit = context.read<GrowthCubit>();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
-          child: AddGrowthRecordPage(babyId: widget.babyId),
+          child: AddGrowthRecordPage(
+            babyId: widget.babyId,
+            existing: existing,
+          ),
         ),
       ),
     );
@@ -41,7 +46,7 @@ class _GrowthPageState extends State<GrowthPage> {
       appBar: AppBar(title: const Text('Bé lớn từng ngày')),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fab_growth',
-        onPressed: _openAdd,
+        onPressed: _openForm,
         icon: const Icon(Icons.add),
         label: const Text('Thêm lần đo'),
       ),
@@ -51,14 +56,10 @@ class _GrowthPageState extends State<GrowthPage> {
             return const Center(child: CircularProgressIndicator());
           }
           if (state.records.isEmpty) {
-            return const Center(
-              child: Padding(
-                padding: EdgeInsets.all(AppSpacing.xl),
-                child: Text(
-                  'Chưa có dữ liệu tăng trưởng.\nNhấn "Thêm lần đo" để bắt đầu.',
-                  textAlign: TextAlign.center,
-                ),
-              ),
+            return const AppEmptyState(
+              icon: Icons.monitor_weight_outlined,
+              title: 'Chưa có dữ liệu tăng trưởng',
+              message: 'Ghi lần đo đầu tiên để theo dõi bé lớn từng ngày nhé!',
             );
           }
 
@@ -105,6 +106,7 @@ class _GrowthPageState extends State<GrowthPage> {
                 ...filtered.map(
                   (r) => GrowthRecordTile(
                     record: r,
+                    onTap: () => _openForm(existing: r),
                     onDelete: () => context.read<GrowthCubit>().remove(r.id),
                   ),
                 ),

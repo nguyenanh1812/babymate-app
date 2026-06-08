@@ -13,11 +13,13 @@ class ActivityTimeline extends StatelessWidget {
   const ActivityTimeline({
     required this.activities,
     this.onDelete,
+    this.onTap,
     super.key,
   });
 
   final List<Activity> activities;
   final void Function(Activity activity)? onDelete;
+  final void Function(Activity activity)? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -28,6 +30,7 @@ class ActivityTimeline extends StatelessWidget {
             activity: activities[i],
             isLast: i == activities.length - 1,
             onDelete: onDelete == null ? null : () => onDelete!(activities[i]),
+            onTap: onTap == null ? null : () => onTap!(activities[i]),
           ),
       ],
     );
@@ -39,11 +42,13 @@ class _TimelineRow extends StatelessWidget {
     required this.activity,
     required this.isLast,
     this.onDelete,
+    this.onTap,
   });
 
   final Activity activity;
   final bool isLast;
   final VoidCallback? onDelete;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -51,56 +56,59 @@ class _TimelineRow extends StatelessWidget {
     final visual = ActivityVisual.of(activity.type);
     final detail = activityDetail(activity);
 
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          _Indicator(visual: visual, isLast: isLast),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Dòng tiêu đề cao cố định = đường kính nốt, canh giữa để nốt,
-                // giờ và nút ✕ luôn thẳng hàng với tiêu đề.
-                SizedBox(
-                  height: _Indicator.node,
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          activityTitle(activity),
-                          style: theme.textTheme.titleMedium,
+    return InkWell(
+      onTap: onTap,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _Indicator(visual: visual, isLast: isLast),
+            const SizedBox(width: AppSpacing.md),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Dòng tiêu đề cao cố định = đường kính nốt, canh giữa để nốt,
+                  // giờ và nút ✕ luôn thẳng hàng với tiêu đề.
+                  SizedBox(
+                    height: _Indicator.node,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            activityTitle(activity),
+                            style: theme.textTheme.titleMedium,
+                          ),
                         ),
-                      ),
-                      const SizedBox(width: AppSpacing.sm),
-                      Text(
-                        activity.time.hhmm,
-                        style: theme.textTheme.bodySmall,
-                      ),
-                      if (onDelete != null)
-                        IconButton(
-                          icon: const Icon(Icons.close, size: 16),
-                          onPressed: onDelete,
-                          tooltip: 'Xoá',
-                          visualDensity: VisualDensity.compact,
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(),
+                        const SizedBox(width: AppSpacing.sm),
+                        Text(
+                          activity.time.hhmm,
+                          style: theme.textTheme.bodySmall,
                         ),
-                    ],
+                        if (onDelete != null)
+                          IconButton(
+                            icon: const Icon(Icons.close, size: 16),
+                            onPressed: onDelete,
+                            tooltip: 'Xoá',
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                      ],
+                    ),
                   ),
-                ),
-                if (detail.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: AppSpacing.xxs),
-                    child: Text(detail, style: theme.textTheme.bodyMedium),
-                  ),
-                // Khoảng cách tới mục kế tiếp (đường nối chạy dọc bên cạnh).
-                SizedBox(height: isLast ? 0 : AppSpacing.lg),
-              ],
+                  if (detail.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: AppSpacing.xxs),
+                      child: Text(detail, style: theme.textTheme.bodyMedium),
+                    ),
+                  // Khoảng cách tới mục kế tiếp (đường nối chạy dọc bên cạnh).
+                  SizedBox(height: isLast ? 0 : AppSpacing.lg),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

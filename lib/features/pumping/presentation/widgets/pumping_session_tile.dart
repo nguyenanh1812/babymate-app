@@ -8,16 +8,19 @@ class PumpingSessionTile extends StatelessWidget {
   const PumpingSessionTile({
     required this.session,
     this.onDelete,
+    this.onTap,
     super.key,
   });
 
   final PumpingSession session;
   final VoidCallback? onDelete;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     return ListTile(
+      onTap: onTap,
       leading: const CircleAvatar(child: Icon(Icons.water_drop_outlined)),
       title: Text('${session.total} ml', style: theme.textTheme.titleMedium),
       subtitle: _detail.isEmpty ? null : Text(_detail),

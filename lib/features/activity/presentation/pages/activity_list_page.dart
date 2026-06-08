@@ -3,8 +3,10 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/period_filter.dart';
 import '../../domain/entities/activity.dart';
+import '../activity_actions.dart';
 import '../cubit/activity_cubit.dart';
 import '../widgets/activity_tile.dart';
 
@@ -37,6 +39,14 @@ class _ActivityListPageState extends State<ActivityListPage> {
                 if (state.status == ActivityStatus.loading &&
                     state.activities.isEmpty) {
                   return const Center(child: CircularProgressIndicator());
+                }
+                if (state.activities.isEmpty) {
+                  return const AppEmptyState(
+                    icon: Icons.event_note_outlined,
+                    title: 'Chưa có hoạt động nào',
+                    message: 'Ghi nhanh cữ bú, giấc ngủ hay lần thay tã '
+                        'cho bé ở trang chủ nhé!',
+                  );
                 }
                 final filtered = state.activities
                     .where((a) => _period.contains(a.time))
@@ -74,8 +84,8 @@ class _ActivityListPageState extends State<ActivityListPage> {
                         ...items.map(
                           (a) => ActivityTile(
                             activity: a,
-                            onDelete: () =>
-                                context.read<ActivityCubit>().remove(a.id),
+                            onTap: () => openEditActivity(context, a),
+                            onDelete: () => deleteActivity(context, a),
                           ),
                         ),
                       ],

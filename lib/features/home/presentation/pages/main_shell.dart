@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../baby/presentation/cubit/baby_cubit.dart';
 import '../../../baby/presentation/pages/baby_list_page.dart';
 import '../../../growth/presentation/pages/growth_page.dart';
@@ -89,38 +89,15 @@ class _RequireBaby extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Scaffold(
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.xl),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                Icons.child_care_rounded,
-                size: 64,
-                color: theme.colorScheme.primary,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              Text(
-                'Chưa có hồ sơ bé',
-                style: theme.textTheme.titleMedium,
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                'Thêm hồ sơ bé để dùng tính năng này.',
-                textAlign: TextAlign.center,
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: AppSpacing.lg),
-              FilledButton.icon(
-                onPressed: onAddBaby,
-                icon: const Icon(Icons.person_add_alt),
-                label: const Text('Tới Hồ sơ bé'),
-              ),
-            ],
-          ),
+      body: AppEmptyState(
+        icon: Icons.child_care_rounded,
+        title: 'Chưa có hồ sơ bé',
+        message: 'Thêm hồ sơ bé để dùng tính năng này nhé!',
+        action: FilledButton.icon(
+          onPressed: onAddBaby,
+          icon: const Icon(Icons.person_add_alt),
+          label: const Text('Tới Hồ sơ bé'),
         ),
       ),
     );

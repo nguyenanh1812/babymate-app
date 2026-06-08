@@ -1,7 +1,33 @@
+import 'package:babymate_app/core/error/result.dart';
 import 'package:babymate_app/features/inventory/data/models/supply_txn_model.dart';
 import 'package:babymate_app/features/inventory/domain/entities/supply_txn.dart';
+import 'package:babymate_app/features/inventory/domain/repositories/inventory_repository.dart';
+import 'package:babymate_app/features/inventory/domain/usecases/add_supply_transaction.dart';
+import 'package:babymate_app/features/inventory/domain/usecases/delete_supply_transaction.dart';
+import 'package:babymate_app/features/inventory/domain/usecases/get_supply_transactions.dart';
 import 'package:babymate_app/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
+
+/// Repo giả lưu trong bộ nhớ để kiểm thử luồng cubit thật.
+class _FakeRepo implements InventoryRepository {
+  final List<SupplyTxn> _store = [];
+
+  @override
+  Future<Result<List<SupplyTxn>>> getTransactions(String babyId) async =>
+      Result.ok(_store.where((t) => t.babyId == babyId).toList());
+
+  @override
+  Future<Result<void>> addTransaction(SupplyTxn txn) async {
+    _store.add(txn);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<void>> deleteTransaction(String id) async {
+    _store.removeWhere((t) => t.id == id);
+    return const Result.ok(null);
+  }
+}
 
 void main() {
   group('SupplyTxnModel mapping', () {
@@ -83,6 +109,37 @@ void main() {
         state.closingStock(SupplyType.diaper, june, category: 'Đêm'),
         9,
       );
+    });
+  });
+
+  group('InventoryCubit nhập/trừ/hoàn', () {
+    late InventoryCubit cubit;
+
+    setUp(() {
+      final repo = _FakeRepo();
+      cubit = InventoryCubit(
+        getTransactions: GetSupplyTransactions(repo),
+        addTransaction: AddSupplyTransaction(repo),
+        deleteTransaction: DeleteSupplyTransaction(repo),
+      );
+    });
+
+    test('trừ khi thay tã rồi hoàn lại khi xoá → tồn về như cũ', () async {
+      await cubit.load('b1');
+      await cubit.buy(SupplyType.diaper, 10, category: 'Thường');
+      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 10);
+
+      await cubit.consumeDiaper(category: 'Thường');
+      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 9);
+
+      await cubit.restoreDiaper(category: 'Thường');
+      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 10);
+    });
+
+    test('hoàn theo babyId truyền vào dù cubit chưa load bé đó', () async {
+      // Chưa load bé nào; truyền babyId trực tiếp khi hoàn.
+      await cubit.restoreDiaper(category: 'Thường', babyId: 'b1');
+      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 1);
     });
   });
 }

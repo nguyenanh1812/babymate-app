@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/period_filter.dart';
+import '../../domain/entities/pumping_session.dart';
 import '../cubit/pumping_cubit.dart';
 import '../widgets/pumping_daily_chart.dart';
 import '../widgets/pumping_session_tile.dart';
@@ -23,13 +24,16 @@ class PumpingPage extends StatefulWidget {
 class _PumpingPageState extends State<PumpingPage> {
   TimePeriod _period = TimePeriod.week;
 
-  void _openAdd() {
+  void _openForm({PumpingSession? existing}) {
     final cubit = context.read<PumpingCubit>();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
-          child: AddPumpingSessionPage(babyId: widget.babyId),
+          child: AddPumpingSessionPage(
+            babyId: widget.babyId,
+            existing: existing,
+          ),
         ),
       ),
     );
@@ -54,7 +58,7 @@ class _PumpingPageState extends State<PumpingPage> {
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fab_pumping',
-        onPressed: _openAdd,
+        onPressed: _openForm,
         icon: const Icon(Icons.add),
         label: const Text('Thêm cữ hút'),
       ),
@@ -103,6 +107,7 @@ class _PumpingPageState extends State<PumpingPage> {
                 ...filtered.map(
                   (s) => PumpingSessionTile(
                     session: s,
+                    onTap: () => _openForm(existing: s),
                     onDelete: () => context.read<PumpingCubit>().remove(s.id),
                   ),
                 ),

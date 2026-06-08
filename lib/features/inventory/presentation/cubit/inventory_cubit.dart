@@ -52,11 +52,21 @@ class InventoryCubit extends Cubit<InventoryState> {
       _record(type, -1, note: note, category: category);
 
   /// Tự trừ 1 bỉm (loại [category]) khi ghi hoạt động thay tã.
-  Future<void> consumeDiaper({String? category}) => _record(
+  Future<void> consumeDiaper({String? category, String? babyId}) => _record(
         SupplyType.diaper,
         -1,
         note: 'Thay tã',
         category: category ?? kDefaultDiaperCategory,
+        babyId: babyId,
+      );
+
+  /// Hoàn lại 1 bỉm khi xoá/sửa hoạt động thay tã.
+  Future<void> restoreDiaper({String? category, String? babyId}) => _record(
+        SupplyType.diaper,
+        1,
+        note: 'Hoàn (sửa/xoá thay tã)',
+        category: category ?? kDefaultDiaperCategory,
+        babyId: babyId,
       );
 
   Future<void> remove(String id) async {
@@ -79,12 +89,15 @@ class InventoryCubit extends Cubit<InventoryState> {
     int delta, {
     String? note,
     String? category,
+    String? babyId,
   }) async {
-    final babyId = state.babyId;
-    if (babyId == null || delta == 0) return;
+    final targetBaby = babyId ?? state.babyId;
+    if (targetBaby == null || delta == 0) return;
+    // Đảm bảo cubit đang theo dõi đúng bé (vd khi gọi từ luồng xoá hoạt động).
+    if (state.babyId != targetBaby) await load(targetBaby);
     final txn = SupplyTxn(
       id: _uuid.v4(),
-      babyId: babyId,
+      babyId: targetBaby,
       type: type,
       delta: delta,
       time: DateTime.now(),
@@ -93,7 +106,7 @@ class InventoryCubit extends Cubit<InventoryState> {
     );
     final result = await _addTransaction(txn);
     await result.fold(
-      (_) => load(babyId),
+      (_) => load(targetBaby),
       (failure) async => emit(
         state.copyWith(
           status: InventoryStatus.error,

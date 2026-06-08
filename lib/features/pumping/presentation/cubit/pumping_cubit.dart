@@ -50,9 +50,10 @@ class PumpingCubit extends Cubit<PumpingState> {
     int? rightMl,
     int? totalMl,
     String? note,
+    String? id,
   }) async {
     final session = PumpingSession(
-      id: _uuid.v4(),
+      id: id ?? _uuid.v4(),
       babyId: babyId,
       time: time,
       leftMl: leftMl,

@@ -4,22 +4,27 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/di/injection.dart';
 import '../../../../core/notifications/notification_service.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/utils/date_time_picker.dart';
 import '../../../../core/utils/date_x.dart';
 import '../../../inventory/domain/entities/supply_txn.dart';
 import '../../../inventory/presentation/cubit/inventory_cubit.dart';
 import '../../domain/entities/activity.dart';
 import '../cubit/activity_cubit.dart';
 
-/// Form ghi nhanh một hoạt động (bú / ngủ / thay tã) cho [babyId].
+/// Form ghi/sửa một hoạt động (bú / ngủ / thay tã) cho [babyId].
+///
+/// Truyền [existing] để vào chế độ chỉnh sửa (giữ nguyên id khi lưu).
 class AddActivityPage extends StatefulWidget {
   const AddActivityPage({
     required this.type,
     required this.babyId,
+    this.existing,
     super.key,
   });
 
   final ActivityType type;
   final String babyId;
+  final Activity? existing;
 
   @override
   State<AddActivityPage> createState() => _AddActivityPageState();
@@ -30,15 +35,29 @@ class _AddActivityPageState extends State<AddActivityPage> {
   final _amountController = TextEditingController();
   final _leadController = TextEditingController(text: '25');
 
-  late TimeOfDay _time = TimeOfDay.now();
-  TimeOfDay? _endTime;
+  late DateTime _time;
+  DateTime? _endTime;
   bool _remindBeforeWake = false;
   FeedingType _feedingType = FeedingType.breast;
   DiaperType _diaperType = DiaperType.wet;
   String _diaperCategory = kDefaultDiaperCategory;
 
-  /// Số phút nhắc trước mặc định nếu người dùng không nhập.
   static const int _defaultLeadMinutes = 25;
+
+  bool get _isEditing => widget.existing != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final e = widget.existing;
+    _time = e?.time ?? DateTime.now();
+    _endTime = e?.endTime;
+    _feedingType = e?.feedingType ?? FeedingType.breast;
+    _diaperType = e?.diaperType ?? DiaperType.wet;
+    _diaperCategory = e?.diaperCategory ?? kDefaultDiaperCategory;
+    if (e?.amountMl != null) _amountController.text = '${e!.amountMl}';
+    if (e?.note != null) _noteController.text = e!.note!;
+  }
 
   @override
   void dispose() {
@@ -48,39 +67,28 @@ class _AddActivityPageState extends State<AddActivityPage> {
     super.dispose();
   }
 
-  String get _appBarTitle => switch (widget.type) {
-        ActivityType.feeding => 'Ghi cữ bú',
-        ActivityType.sleep => 'Ghi giấc ngủ',
-        ActivityType.diaper => 'Ghi thay tã',
-      };
-
-  DateTime _toDateTime(TimeOfDay t) {
-    final now = DateTime.now();
-    return DateTime(now.year, now.month, now.day, t.hour, t.minute);
+  String get _appBarTitle {
+    final verb = _isEditing ? 'Sửa' : 'Ghi';
+    return switch (widget.type) {
+      ActivityType.feeding => '$verb cữ bú',
+      ActivityType.sleep => '$verb giấc ngủ',
+      ActivityType.diaper => '$verb thay tã',
+    };
   }
 
-  Future<void> _pickTime({required bool isEnd}) async {
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: isEnd ? (_endTime ?? TimeOfDay.now()) : _time,
-    );
-    if (picked == null) return;
-    setState(() {
-      if (isEnd) {
-        _endTime = picked;
-      } else {
-        _time = picked;
-      }
-    });
+  Future<void> _pickStart() async {
+    final picked = await pickDateTime(context, initial: _time);
+    if (picked != null) setState(() => _time = picked);
   }
 
-  /// Đặt thông báo trước số phút người dùng nhập so với giờ kết thúc
-  /// (giờ bé dự kiến tỉnh).
+  Future<void> _pickEnd() async {
+    final picked = await pickDateTime(context, initial: _endTime ?? _time);
+    if (picked != null) setState(() => _endTime = picked);
+  }
+
+  /// Đặt thông báo trước số phút người dùng nhập so với giờ kết thúc.
   Future<void> _scheduleWakeReminder() async {
-    var wake = _toDateTime(_endTime!);
-    if (!wake.isAfter(DateTime.now())) {
-      wake = wake.add(const Duration(days: 1));
-    }
+    final wake = _endTime!;
     final lead =
         int.tryParse(_leadController.text.trim()) ?? _defaultLeadMinutes;
     final remindAt = wake.subtract(Duration(minutes: lead));
@@ -98,36 +106,52 @@ class _AddActivityPageState extends State<AddActivityPage> {
     final cubit = context.read<ActivityCubit>();
     final note = _noteController.text.trim();
     final noteOrNull = note.isEmpty ? null : note;
+    final id = widget.existing?.id;
 
     switch (widget.type) {
       case ActivityType.feeding:
         cubit.logFeeding(
           babyId: widget.babyId,
-          time: _toDateTime(_time),
+          time: _time,
           feedingType: _feedingType,
           amountMl: _feedingType == FeedingType.bottle
               ? int.tryParse(_amountController.text)
               : null,
           note: noteOrNull,
+          id: id,
         );
       case ActivityType.sleep:
         cubit.logSleep(
           babyId: widget.babyId,
-          time: _toDateTime(_time),
-          endTime: _endTime == null ? null : _toDateTime(_endTime!),
+          time: _time,
+          endTime: _endTime,
           note: noteOrNull,
+          id: id,
         );
-        // Nếu bật nhắc và có giờ kết thúc, đặt nhắc trước số phút đã nhập.
         if (_remindBeforeWake && _endTime != null) _scheduleWakeReminder();
       case ActivityType.diaper:
+        final inventory = context.read<InventoryCubit>();
+        // Khi sửa: hoàn lại bỉm loại cũ trước rồi trừ loại mới (net = 0 nếu
+        // không đổi loại). Khi thêm mới: chỉ trừ 1.
+        final old = widget.existing;
+        if (old != null && old.type == ActivityType.diaper) {
+          inventory.restoreDiaper(
+            category: old.diaperCategory,
+            babyId: widget.babyId,
+          );
+        }
         cubit.logDiaper(
           babyId: widget.babyId,
-          time: _toDateTime(_time),
+          time: _time,
           diaperType: _diaperType,
+          diaperCategory: _diaperCategory,
           note: noteOrNull,
+          id: id,
         );
-        // Mỗi lần thay tã tự trừ 1 bỉm trong kho (theo loại đã chọn).
-        context.read<InventoryCubit>().consumeDiaper(category: _diaperCategory);
+        inventory.consumeDiaper(
+          category: _diaperCategory,
+          babyId: widget.babyId,
+        );
     }
     Navigator.of(context).pop();
   }
@@ -139,10 +163,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _timeTile(
+          _dateTimeTile(
             label: widget.type == ActivityType.sleep ? 'Bắt đầu' : 'Thời gian',
-            value: _toDateTime(_time).hhmm,
-            onPick: () => _pickTime(isEnd: false),
+            value: '${_time.ddMMyyyy} ${_time.hhmm}',
+            onPick: _pickStart,
           ),
           ..._typeSpecificFields(),
           const SizedBox(height: AppSpacing.lg),
@@ -154,7 +178,10 @@ class _AddActivityPageState extends State<AddActivityPage> {
             maxLines: 2,
           ),
           const SizedBox(height: AppSpacing.xxl),
-          FilledButton(onPressed: _submit, child: const Text('Lưu')),
+          FilledButton(
+            onPressed: _submit,
+            child: Text(_isEditing ? 'Cập nhật' : 'Lưu'),
+          ),
         ],
       ),
     );
@@ -188,10 +215,12 @@ class _AddActivityPageState extends State<AddActivityPage> {
       case ActivityType.sleep:
         return [
           const SizedBox(height: AppSpacing.sm),
-          _timeTile(
+          _dateTimeTile(
             label: 'Kết thúc (giờ bé dự kiến tỉnh)',
-            value: _endTime == null ? 'Chưa đặt' : _toDateTime(_endTime!).hhmm,
-            onPick: () => _pickTime(isEnd: true),
+            value: _endTime == null
+                ? 'Chưa đặt'
+                : '${_endTime!.ddMMyyyy} ${_endTime!.hhmm}',
+            onPick: _pickEnd,
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -252,7 +281,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     }
   }
 
-  Widget _timeTile({
+  Widget _dateTimeTile({
     required String label,
     required String value,
     required VoidCallback onPick,

@@ -51,7 +51,7 @@ class _AddBabyPageState extends State<AddBabyPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Thêm bé')),
+      appBar: AppBar(title: const Text('Thêm bé yêu')),
       body: Form(
         key: _formKey,
         child: ListView(

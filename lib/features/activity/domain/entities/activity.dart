@@ -23,6 +23,7 @@ class Activity extends Equatable {
     this.amountMl,
     this.feedingType,
     this.diaperType,
+    this.diaperCategory,
     this.note,
   });
 
@@ -41,6 +42,9 @@ class Activity extends Equatable {
 
   final FeedingType? feedingType;
   final DiaperType? diaperType;
+
+  /// Loại bỉm đã dùng (chỉ với thay tã) — để hoàn/điều chỉnh kho khi sửa/xoá.
+  final String? diaperCategory;
   final String? note;
 
   /// Thời lượng giấc ngủ, null nếu chưa kết thúc hoặc không phải giấc ngủ.
@@ -56,6 +60,7 @@ class Activity extends Equatable {
         amountMl,
         feedingType,
         diaperType,
+        diaperCategory,
         note,
       ];
 }

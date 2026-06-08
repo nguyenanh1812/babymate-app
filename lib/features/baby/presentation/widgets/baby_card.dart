@@ -30,8 +30,8 @@ class BabyCard extends StatelessWidget {
           vertical: AppSpacing.xs,
         ),
         leading: CircleAvatar(
-          backgroundColor: theme.colorScheme.primary,
-          child: Icon(_genderIcon, color: theme.colorScheme.onPrimary),
+          backgroundColor: _genderColor,
+          child: Icon(_genderIcon, color: Colors.white),
         ),
         title: Text(baby.name, style: theme.textTheme.titleMedium),
         subtitle: Text(DateTime.now().babyAgeFrom(baby.birthDate)),
@@ -57,5 +57,11 @@ class BabyCard extends StatelessWidget {
         Gender.male => Icons.male,
         Gender.female => Icons.female,
         Gender.other => Icons.child_care,
+      };
+
+  Color get _genderColor => switch (baby.gender) {
+        Gender.male => const Color(0xFF8FB8DE), // xanh
+        Gender.female => const Color(0xFFF38BA0), // hồng
+        Gender.other => const Color(0xFF56C2A6), // bạc hà
       };
 }
