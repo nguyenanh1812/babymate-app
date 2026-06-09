@@ -7,64 +7,75 @@ class InventoryState extends Equatable {
     this.status = InventoryStatus.initial,
     this.babyId,
     this.txns = const [],
+    this.customProducts = const [],
     this.errorMessage,
   });
 
   final InventoryStatus status;
   final String? babyId;
   final List<SupplyTxn> txns;
+  final List<Product> customProducts;
   final String? errorMessage;
 
-  /// Tồn kho hiện tại của một loại (tổng mọi giao dịch).
-  int stockOf(SupplyType type) =>
-      txns.where((t) => t.type == type).fold(0, (sum, t) => sum + t.delta);
+  /// Tất cả sản phẩm: dựng sẵn (bỉm/sữa) + tự thêm.
+  List<Product> get products => [...kBuiltinProducts, ...customProducts];
 
-  /// Các loại của [type]: loại có sẵn + loại đã từng phát sinh giao dịch.
-  List<String> categoriesOf(SupplyType type) {
-    final fallback = defaultCategoryOf(type);
-    final set = <String>{...presetCategoriesOf(type)};
+  Product? productById(String id) {
+    for (final p in products) {
+      if (p.id == id) return p;
+    }
+    return null;
+  }
+
+  /// Tồn kho hiện tại của một sản phẩm.
+  int stockOf(String productId) => txns
+      .where((t) => t.productId == productId)
+      .fold(0, (sum, t) => sum + t.delta);
+
+  /// Đã dùng (giảm) hôm nay — số dương.
+  int usedTodayOf(String productId) => txns
+      .where((t) => t.productId == productId && t.delta < 0 && t.time.isToday)
+      .fold(0, (sum, t) => sum - t.delta);
+
+  /// Các category của một sản phẩm: dựng sẵn + đã từng phát sinh.
+  List<String> categoriesOf(String productId) {
+    final set = <String>{...presetCategoriesOf(productId)};
     for (final t in txns) {
-      if (t.type == type) set.add(t.category ?? fallback);
+      if (t.productId == productId) set.add(t.category ?? kDefaultCategory);
     }
     return set.toList();
   }
 
-  /// Tồn kho của [type] theo từng loại.
-  int stockByCategory(SupplyType type, String category) {
-    final fallback = defaultCategoryOf(type);
-    return txns
-        .where((t) => t.type == type && (t.category ?? fallback) == category)
-        .fold(0, (sum, t) => sum + t.delta);
-  }
-
-  /// Các loại bỉm (tiện dụng cho màn hình ghi thay tã).
-  List<String> diaperCategories() => categoriesOf(SupplyType.diaper);
-
-  /// Số lượng đã dùng hôm nay (số dương).
-  int usedTodayOf(SupplyType type) => txns
-      .where((t) => t.type == type && t.delta < 0 && t.time.isToday)
-      .fold(0, (sum, t) => sum - t.delta);
-
-  bool _matchCategory(SupplyTxn t, String? category) =>
-      category == null || (t.category ?? defaultCategoryOf(t.type)) == category;
-
-  /// Số đã mua trong tháng [month]; lọc theo [category] nếu có.
-  int boughtInMonth(SupplyType type, DateTime month, {String? category}) => txns
+  int stockByCategory(String productId, String category) => txns
       .where(
         (t) =>
-            t.type == type &&
-            t.delta > 0 &&
-            t.time.year == month.year &&
-            t.time.month == month.month &&
-            _matchCategory(t, category),
+            t.productId == productId &&
+            (t.category ?? kDefaultCategory) == category,
       )
       .fold(0, (sum, t) => sum + t.delta);
 
-  /// Số đã dùng trong tháng [month] (số dương); lọc theo [category] nếu có.
-  int usedInMonth(SupplyType type, DateTime month, {String? category}) => txns
+  /// Các category bỉm (tiện cho màn ghi thay tã).
+  List<String> diaperCategories() => categoriesOf(kDiaperProductId);
+
+  bool _matchCategory(SupplyTxn t, String? category) =>
+      category == null || (t.category ?? kDefaultCategory) == category;
+
+  int boughtInMonth(String productId, DateTime month, {String? category}) =>
+      txns
+          .where(
+            (t) =>
+                t.productId == productId &&
+                t.delta > 0 &&
+                t.time.year == month.year &&
+                t.time.month == month.month &&
+                _matchCategory(t, category),
+          )
+          .fold(0, (sum, t) => sum + t.delta);
+
+  int usedInMonth(String productId, DateTime month, {String? category}) => txns
       .where(
         (t) =>
-            t.type == type &&
+            t.productId == productId &&
             t.delta < 0 &&
             t.time.year == month.year &&
             t.time.month == month.month &&
@@ -72,14 +83,12 @@ class InventoryState extends Equatable {
       )
       .fold(0, (sum, t) => sum - t.delta);
 
-  /// Tồn cuối tháng [month] = tổng giao dịch tính tới hết tháng đó;
-  /// lọc theo [category] nếu có.
-  int closingStock(SupplyType type, DateTime month, {String? category}) {
+  int closingStock(String productId, DateTime month, {String? category}) {
     final endOfMonth = DateTime(month.year, month.month + 1);
     return txns
         .where(
           (t) =>
-              t.type == type &&
+              t.productId == productId &&
               t.time.isBefore(endOfMonth) &&
               _matchCategory(t, category),
         )
@@ -90,16 +99,19 @@ class InventoryState extends Equatable {
     InventoryStatus? status,
     String? babyId,
     List<SupplyTxn>? txns,
+    List<Product>? customProducts,
     String? errorMessage,
   }) {
     return InventoryState(
       status: status ?? this.status,
       babyId: babyId ?? this.babyId,
       txns: txns ?? this.txns,
+      customProducts: customProducts ?? this.customProducts,
       errorMessage: errorMessage,
     );
   }
 
   @override
-  List<Object?> get props => [status, babyId, txns, errorMessage];
+  List<Object?> get props =>
+      [status, babyId, txns, customProducts, errorMessage];
 }

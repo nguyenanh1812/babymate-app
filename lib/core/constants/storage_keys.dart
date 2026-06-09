@@ -25,6 +25,9 @@ abstract final class StorageKeys {
   /// Box lưu giao dịch kho (bỉm/sữa).
   static const String supplyTxnBox = 'supply_txn_box';
 
+  /// Box lưu sản phẩm tự thêm trong kho.
+  static const String productBox = 'product_box';
+
   // Key trong settingsBox
   static const String themeMode = 'theme_mode';
   static const String localeCode = 'locale_code';

@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
@@ -101,6 +103,8 @@ class _GreetingHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final initial = baby.name.isEmpty ? '?' : baby.name.characters.first;
+    final hasAvatar =
+        baby.avatarPath != null && File(baby.avatarPath!).existsSync();
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
@@ -119,13 +123,17 @@ class _GreetingHeader extends StatelessWidget {
           CircleAvatar(
             radius: 28,
             backgroundColor: Colors.white.withOpacity(0.25),
-            child: Text(
-              initial.toUpperCase(),
-              style: theme.textTheme.headlineSmall?.copyWith(
-                color: Colors.white,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
+            backgroundImage:
+                hasAvatar ? FileImage(File(baby.avatarPath!)) : null,
+            child: hasAvatar
+                ? null
+                : Text(
+                    initial.toUpperCase(),
+                    style: theme.textTheme.headlineSmall?.copyWith(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
           ),
           const SizedBox(width: AppSpacing.lg),
           Expanded(

@@ -58,12 +58,15 @@ class BabyCubit extends Cubit<BabyState> {
     required String name,
     required DateTime birthDate,
     required Gender gender,
+    String? id,
+    String? avatarPath,
   }) async {
     final baby = Baby(
-      id: _uuid.v4(),
+      id: id ?? _uuid.v4(),
       name: name.trim(),
       birthDate: birthDate,
       gender: gender,
+      avatarPath: avatarPath,
     );
     final result = await _saveBaby(baby);
     await result.fold(

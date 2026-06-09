@@ -3,6 +3,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../../core/widgets/picker_field.dart';
 import '../../domain/entities/growth_record.dart';
 import '../cubit/growth_cubit.dart';
 
@@ -103,15 +104,13 @@ class _AddGrowthRecordPageState extends State<AddGrowthRecordPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.event),
-            title: const Text('Ngày đo'),
-            subtitle: Text(_date.ddMMyyyy),
-            trailing:
-                TextButton(onPressed: _pickDate, child: const Text('Chọn')),
+          PickerField(
+            icon: Icons.event,
+            label: 'Ngày đo',
+            value: _date.ddMMyyyy,
+            onTap: _pickDate,
           ),
-          const SizedBox(height: AppSpacing.sm),
+          const SizedBox(height: AppSpacing.md),
           _numberField(_weightController, 'Cân nặng', 'kg'),
           const SizedBox(height: AppSpacing.md),
           _numberField(_heightController, 'Chiều cao', 'cm'),

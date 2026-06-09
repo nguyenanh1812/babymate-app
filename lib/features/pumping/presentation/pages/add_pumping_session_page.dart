@@ -4,6 +4,7 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_time_picker.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../../core/widgets/picker_field.dart';
 import '../../domain/entities/pumping_session.dart';
 import '../cubit/pumping_cubit.dart';
 
@@ -101,13 +102,11 @@ class _AddPumpingSessionPageState extends State<AddPumpingSessionPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          ListTile(
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.schedule),
-            title: const Text('Thời gian'),
-            subtitle: Text('${_time.ddMMyyyy} ${_time.hhmm}'),
-            trailing:
-                TextButton(onPressed: _pickTime, child: const Text('Chọn')),
+          PickerField(
+            icon: Icons.schedule,
+            label: 'Thời gian',
+            value: '${_time.ddMMyyyy} ${_time.hhmm}',
+            onTap: _pickTime,
           ),
           const SizedBox(height: AppSpacing.md),
           Row(

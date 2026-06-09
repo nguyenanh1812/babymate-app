@@ -1,30 +1,32 @@
 import 'package:hive/hive.dart';
 
+import '../../domain/entities/product.dart';
 import '../../domain/entities/supply_txn.dart';
 
 part 'supply_txn_model.g.dart';
 
-/// Bản ghi Hive cho một giao dịch kho. Enum lưu dưới dạng index.
+/// Bản ghi Hive cho một giao dịch kho.
 @HiveType(typeId: 5)
 class SupplyTxnModel extends HiveObject {
   SupplyTxnModel({
     required this.id,
     required this.babyId,
-    required this.typeIndex,
     required this.delta,
     required this.time,
+    this.typeIndex,
     this.note,
     this.category,
+    this.productId,
   });
 
   factory SupplyTxnModel.fromEntity(SupplyTxn t) => SupplyTxnModel(
         id: t.id,
         babyId: t.babyId,
-        typeIndex: t.type.index,
         delta: t.delta,
         time: t.time,
         note: t.note,
         category: t.category,
+        productId: t.productId,
       );
 
   @HiveField(0)
@@ -33,8 +35,9 @@ class SupplyTxnModel extends HiveObject {
   @HiveField(1)
   final String babyId;
 
+  // Field 2 (typeIndex) là cách lưu cũ (0=bỉm, 1=sữa) — giữ để đọc dữ liệu cũ.
   @HiveField(2)
-  final int typeIndex;
+  final int? typeIndex;
 
   @HiveField(3)
   final int delta;
@@ -48,13 +51,17 @@ class SupplyTxnModel extends HiveObject {
   @HiveField(6)
   final String? category;
 
+  @HiveField(7)
+  final String? productId;
+
   SupplyTxn toEntity() => SupplyTxn(
         id: id,
         babyId: babyId,
-        type: SupplyType.values[typeIndex],
+        productId:
+            productId ?? (typeIndex == 1 ? kMilkProductId : kDiaperProductId),
         delta: delta,
         time: time,
-        note: note,
         category: category,
+        note: note,
       );
 }

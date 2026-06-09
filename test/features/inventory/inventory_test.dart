@@ -1,16 +1,21 @@
 import 'package:babymate_app/core/error/result.dart';
 import 'package:babymate_app/features/inventory/data/models/supply_txn_model.dart';
+import 'package:babymate_app/features/inventory/domain/entities/product.dart';
 import 'package:babymate_app/features/inventory/domain/entities/supply_txn.dart';
 import 'package:babymate_app/features/inventory/domain/repositories/inventory_repository.dart';
 import 'package:babymate_app/features/inventory/domain/usecases/add_supply_transaction.dart';
+import 'package:babymate_app/features/inventory/domain/usecases/delete_product.dart';
 import 'package:babymate_app/features/inventory/domain/usecases/delete_supply_transaction.dart';
+import 'package:babymate_app/features/inventory/domain/usecases/get_products.dart';
 import 'package:babymate_app/features/inventory/domain/usecases/get_supply_transactions.dart';
+import 'package:babymate_app/features/inventory/domain/usecases/save_product.dart';
 import 'package:babymate_app/features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Repo giả lưu trong bộ nhớ để kiểm thử luồng cubit thật.
 class _FakeRepo implements InventoryRepository {
   final List<SupplyTxn> _store = [];
+  final List<Product> _products = [];
 
   @override
   Future<Result<List<SupplyTxn>>> getTransactions(String babyId) async =>
@@ -18,6 +23,7 @@ class _FakeRepo implements InventoryRepository {
 
   @override
   Future<Result<void>> addTransaction(SupplyTxn txn) async {
+    _store.removeWhere((t) => t.id == txn.id); // Hive put() ghi đè theo id.
     _store.add(txn);
     return const Result.ok(null);
   }
@@ -25,6 +31,24 @@ class _FakeRepo implements InventoryRepository {
   @override
   Future<Result<void>> deleteTransaction(String id) async {
     _store.removeWhere((t) => t.id == id);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<List<Product>>> getProducts() async =>
+      Result.ok([..._products]);
+
+  @override
+  Future<Result<void>> saveProduct(Product product) async {
+    _products
+      ..removeWhere((p) => p.id == product.id)
+      ..add(product);
+    return const Result.ok(null);
+  }
+
+  @override
+  Future<Result<void>> deleteProduct(String id) async {
+    _products.removeWhere((p) => p.id == id);
     return const Result.ok(null);
   }
 }
@@ -35,9 +59,10 @@ void main() {
       final txn = SupplyTxn(
         id: 's1',
         babyId: 'b1',
-        type: SupplyType.milk,
+        productId: kMilkProductId,
         delta: -1,
         time: DateTime(2026, 6, 6, 9),
+        category: 'Thường',
         note: 'Bóc hộp',
       );
       expect(SupplyTxnModel.fromEntity(txn).toEntity(), txn);
@@ -45,74 +70,47 @@ void main() {
   });
 
   group('InventoryState tính toán', () {
-    SupplyTxn txn(SupplyType type, int delta, DateTime time) => SupplyTxn(
-          id: '$type$delta$time',
+    SupplyTxn txn(String productId, int delta, DateTime time, [String? cat]) =>
+        SupplyTxn(
+          id: '$productId$delta$time$cat',
           babyId: 'b1',
-          type: type,
+          productId: productId,
           delta: delta,
           time: time,
+          category: cat,
         );
 
-    test('tồn kho = tổng delta theo loại', () {
+    test('tồn kho = tổng delta theo sản phẩm', () {
       final state = InventoryState(
         txns: [
-          txn(SupplyType.diaper, 30, DateTime(2026, 6, 1)),
-          txn(SupplyType.diaper, -1, DateTime(2026, 6, 2)),
-          txn(SupplyType.diaper, -1, DateTime(2026, 6, 3)),
-          txn(SupplyType.milk, 4, DateTime(2026, 6, 1)),
-          txn(SupplyType.milk, -1, DateTime(2026, 6, 2)),
+          txn(kDiaperProductId, 30, DateTime(2026, 6, 1)),
+          txn(kDiaperProductId, -1, DateTime(2026, 6, 2)),
+          txn(kMilkProductId, 4, DateTime(2026, 6, 1)),
         ],
       );
-      expect(state.stockOf(SupplyType.diaper), 28);
-      expect(state.stockOf(SupplyType.milk), 3);
-    });
-
-    test('mua/dùng trong tháng và tồn cuối tháng', () {
-      final state = InventoryState(
-        txns: [
-          txn(SupplyType.diaper, 30, DateTime(2026, 5, 20)), // tháng trước
-          txn(SupplyType.diaper, 20, DateTime(2026, 6, 5)),
-          txn(SupplyType.diaper, -1, DateTime(2026, 6, 6)),
-          txn(SupplyType.diaper, -1, DateTime(2026, 6, 7)),
-          txn(SupplyType.diaper, -1, DateTime(2026, 7, 1)), // tháng sau
-        ],
-      );
-      final june = DateTime(2026, 6);
-      expect(state.boughtInMonth(SupplyType.diaper, june), 20);
-      expect(state.usedInMonth(SupplyType.diaper, june), 2);
-      // Tồn cuối tháng 6 = 30 + 20 - 1 - 1 = 48 (chưa tính giao dịch tháng 7).
-      expect(state.closingStock(SupplyType.diaper, june), 48);
+      expect(state.stockOf(kDiaperProductId), 29);
+      expect(state.stockOf(kMilkProductId), 4);
     });
 
     test('báo cáo tháng tách theo loại', () {
-      SupplyTxn t(String cat, int delta) => SupplyTxn(
-            id: '$cat$delta',
-            babyId: 'b1',
-            type: SupplyType.diaper,
-            delta: delta,
-            time: DateTime(2026, 6, 5),
-            category: cat,
-          );
       final state = InventoryState(
-        txns: [t('Thường', 20), t('Thường', -3), t('Đêm', 10), t('Đêm', -1)],
+        txns: [
+          txn(kDiaperProductId, 20, DateTime(2026, 6, 5), 'Thường'),
+          txn(kDiaperProductId, -3, DateTime(2026, 6, 6), 'Thường'),
+          txn(kDiaperProductId, 10, DateTime(2026, 6, 5), 'Đêm'),
+        ],
       );
       final june = DateTime(2026, 6);
       expect(
-        state.boughtInMonth(SupplyType.diaper, june, category: 'Thường'),
+        state.boughtInMonth(kDiaperProductId, june, category: 'Thường'),
         20,
       );
-      expect(
-        state.usedInMonth(SupplyType.diaper, june, category: 'Đêm'),
-        1,
-      );
-      expect(
-        state.closingStock(SupplyType.diaper, june, category: 'Đêm'),
-        9,
-      );
+      expect(state.usedInMonth(kDiaperProductId, june, category: 'Thường'), 3);
+      expect(state.closingStock(kDiaperProductId, june, category: 'Đêm'), 10);
     });
   });
 
-  group('InventoryCubit nhập/trừ/hoàn', () {
+  group('InventoryCubit', () {
     late InventoryCubit cubit;
 
     setUp(() {
@@ -121,25 +119,59 @@ void main() {
         getTransactions: GetSupplyTransactions(repo),
         addTransaction: AddSupplyTransaction(repo),
         deleteTransaction: DeleteSupplyTransaction(repo),
+        getProducts: GetProducts(repo),
+        saveProduct: SaveProduct(repo),
+        deleteProduct: DeleteProduct(repo),
       );
     });
 
-    test('trừ khi thay tã rồi hoàn lại khi xoá → tồn về như cũ', () async {
+    test('nhập → thay tã trừ → xoá hoàn lại', () async {
       await cubit.load('b1');
-      await cubit.buy(SupplyType.diaper, 10, category: 'Thường');
-      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 10);
+      await cubit.buy(kDiaperProductId, 10, category: 'Thường');
+      expect(cubit.state.stockByCategory(kDiaperProductId, 'Thường'), 10);
 
-      await cubit.consumeDiaper(category: 'Thường');
-      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 9);
+      await cubit.consumeDiaperFor(
+        activityId: 'a1',
+        babyId: 'b1',
+        time: DateTime(2026, 6, 8),
+        category: 'Thường',
+      );
+      expect(cubit.state.stockByCategory(kDiaperProductId, 'Thường'), 9);
 
-      await cubit.restoreDiaper(category: 'Thường');
-      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 10);
+      await cubit.removeDiaperFor(activityId: 'a1', babyId: 'b1');
+      expect(cubit.state.stockByCategory(kDiaperProductId, 'Thường'), 10);
     });
 
-    test('hoàn theo babyId truyền vào dù cubit chưa load bé đó', () async {
-      // Chưa load bé nào; truyền babyId trực tiếp khi hoàn.
-      await cubit.restoreDiaper(category: 'Thường', babyId: 'b1');
-      expect(cubit.state.stockByCategory(SupplyType.diaper, 'Thường'), 1);
+    test('điều chỉnh giảm với note', () async {
+      await cubit.load('b1');
+      await cubit.buy(kMilkProductId, 5);
+      await cubit.adjust(kMilkProductId, -2, note: 'Hỏng 2 hộp');
+      expect(cubit.state.stockOf(kMilkProductId), 3);
+    });
+
+    test('xoá loại tự thêm → gộp về Thường, giữ tổng tồn', () async {
+      await cubit.load('b1');
+      await cubit.buy(kMilkProductId, 10, category: 'Thường');
+      await cubit.buy(kMilkProductId, 4, category: 'Meiji');
+      expect(cubit.state.stockByCategory(kMilkProductId, 'Meiji'), 4);
+
+      await cubit.deleteCategory(kMilkProductId, 'Meiji');
+      expect(cubit.state.stockByCategory(kMilkProductId, 'Thường'), 14);
+      expect(cubit.state.stockOf(kMilkProductId), 14);
+      expect(
+        cubit.state.categoriesOf(kMilkProductId).contains('Meiji'),
+        isFalse,
+      );
+    });
+
+    test('thêm sản phẩm mới rồi nhập kho', () async {
+      await cubit.load('b1');
+      await cubit.addProduct(name: 'Khăn ướt', unit: 'gói');
+      final wipes =
+          cubit.state.products.firstWhere((p) => p.name == 'Khăn ướt');
+      await cubit.buy(wipes.id, 7);
+      expect(cubit.state.stockOf(wipes.id), 7);
+      expect(cubit.state.products.length, kBuiltinProducts.length + 1);
     });
   });
 }

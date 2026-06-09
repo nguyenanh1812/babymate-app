@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import 'package:uuid/uuid.dart';
 
 import '../../../../core/di/injection.dart';
 import '../../../../core/notifications/notification_service.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_time_picker.dart';
 import '../../../../core/utils/date_x.dart';
+import '../../../../core/widgets/picker_field.dart';
 import '../../../inventory/domain/entities/supply_txn.dart';
 import '../../../inventory/presentation/cubit/inventory_cubit.dart';
 import '../../domain/entities/activity.dart';
@@ -40,7 +42,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
   bool _remindBeforeWake = false;
   FeedingType _feedingType = FeedingType.breast;
   DiaperType _diaperType = DiaperType.wet;
-  String _diaperCategory = kDefaultDiaperCategory;
+  String _diaperCategory = kDefaultCategory;
 
   static const int _defaultLeadMinutes = 25;
 
@@ -54,7 +56,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
     _endTime = e?.endTime;
     _feedingType = e?.feedingType ?? FeedingType.breast;
     _diaperType = e?.diaperType ?? DiaperType.wet;
-    _diaperCategory = e?.diaperCategory ?? kDefaultDiaperCategory;
+    _diaperCategory = e?.diaperCategory ?? kDefaultCategory;
     if (e?.amountMl != null) _amountController.text = '${e!.amountMl}';
     if (e?.note != null) _noteController.text = e!.note!;
   }
@@ -130,28 +132,23 @@ class _AddActivityPageState extends State<AddActivityPage> {
         );
         if (_remindBeforeWake && _endTime != null) _scheduleWakeReminder();
       case ActivityType.diaper:
-        final inventory = context.read<InventoryCubit>();
-        // Khi sửa: hoàn lại bỉm loại cũ trước rồi trừ loại mới (net = 0 nếu
-        // không đổi loại). Khi thêm mới: chỉ trừ 1.
-        final old = widget.existing;
-        if (old != null && old.type == ActivityType.diaper) {
-          inventory.restoreDiaper(
-            category: old.diaperCategory,
-            babyId: widget.babyId,
-          );
-        }
+        // Tạo/giữ id để giao dịch trừ kho gắn cố định với hoạt động này.
+        final activityId = id ?? const Uuid().v4();
         cubit.logDiaper(
           babyId: widget.babyId,
           time: _time,
           diaperType: _diaperType,
           diaperCategory: _diaperCategory,
           note: noteOrNull,
-          id: id,
+          id: activityId,
         );
-        inventory.consumeDiaper(
-          category: _diaperCategory,
-          babyId: widget.babyId,
-        );
+        // Trừ 1 bỉm; nếu đang sửa thì ghi đè đúng giao dịch (không nhân đôi).
+        context.read<InventoryCubit>().consumeDiaperFor(
+              activityId: activityId,
+              babyId: widget.babyId,
+              time: _time,
+              category: _diaperCategory,
+            );
     }
     Navigator.of(context).pop();
   }
@@ -163,10 +160,11 @@ class _AddActivityPageState extends State<AddActivityPage> {
       body: ListView(
         padding: const EdgeInsets.all(AppSpacing.lg),
         children: [
-          _dateTimeTile(
+          PickerField(
+            icon: Icons.schedule,
             label: widget.type == ActivityType.sleep ? 'Bắt đầu' : 'Thời gian',
             value: '${_time.ddMMyyyy} ${_time.hhmm}',
-            onPick: _pickStart,
+            onTap: _pickStart,
           ),
           ..._typeSpecificFields(),
           const SizedBox(height: AppSpacing.lg),
@@ -215,12 +213,13 @@ class _AddActivityPageState extends State<AddActivityPage> {
       case ActivityType.sleep:
         return [
           const SizedBox(height: AppSpacing.sm),
-          _dateTimeTile(
+          PickerField(
+            icon: Icons.bedtime_outlined,
             label: 'Kết thúc (giờ bé dự kiến tỉnh)',
             value: _endTime == null
                 ? 'Chưa đặt'
                 : '${_endTime!.ddMMyyyy} ${_endTime!.hhmm}',
-            onPick: _pickEnd,
+            onTap: _pickEnd,
           ),
           SwitchListTile(
             contentPadding: EdgeInsets.zero,
@@ -253,7 +252,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
         final categories =
             context.read<InventoryCubit>().state.diaperCategories();
         if (!categories.contains(_diaperCategory)) {
-          _diaperCategory = kDefaultDiaperCategory;
+          _diaperCategory = kDefaultCategory;
         }
         return [
           const SizedBox(height: AppSpacing.md),
@@ -279,19 +278,5 @@ class _AddActivityPageState extends State<AddActivityPage> {
           ),
         ];
     }
-  }
-
-  Widget _dateTimeTile({
-    required String label,
-    required String value,
-    required VoidCallback onPick,
-  }) {
-    return ListTile(
-      contentPadding: EdgeInsets.zero,
-      leading: const Icon(Icons.schedule),
-      title: Text(label),
-      subtitle: Text(value),
-      trailing: TextButton(onPressed: onPick, child: const Text('Chọn')),
-    );
   }
 }

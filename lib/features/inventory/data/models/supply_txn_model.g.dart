@@ -19,18 +19,19 @@ class SupplyTxnModelAdapter extends TypeAdapter<SupplyTxnModel> {
     return SupplyTxnModel(
       id: fields[0] as String,
       babyId: fields[1] as String,
-      typeIndex: fields[2] as int,
       delta: fields[3] as int,
       time: fields[4] as DateTime,
+      typeIndex: fields[2] as int?,
       note: fields[5] as String?,
       category: fields[6] as String?,
+      productId: fields[7] as String?,
     );
   }
 
   @override
   void write(BinaryWriter writer, SupplyTxnModel obj) {
     writer
-      ..writeByte(7)
+      ..writeByte(8)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
@@ -44,7 +45,9 @@ class SupplyTxnModelAdapter extends TypeAdapter<SupplyTxnModel> {
       ..writeByte(5)
       ..write(obj.note)
       ..writeByte(6)
-      ..write(obj.category);
+      ..write(obj.category)
+      ..writeByte(7)
+      ..write(obj.productId);
   }
 
   @override

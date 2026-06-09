@@ -14,6 +14,7 @@ class BabyModel extends HiveObject {
     required this.name,
     required this.birthDate,
     required this.genderIndex,
+    this.avatarPath,
   });
 
   factory BabyModel.fromEntity(Baby baby) => BabyModel(
@@ -21,6 +22,7 @@ class BabyModel extends HiveObject {
         name: baby.name,
         birthDate: baby.birthDate,
         genderIndex: baby.gender.index,
+        avatarPath: baby.avatarPath,
       );
 
   @HiveField(0)
@@ -35,10 +37,14 @@ class BabyModel extends HiveObject {
   @HiveField(3)
   final int genderIndex;
 
+  @HiveField(4)
+  final String? avatarPath;
+
   Baby toEntity() => Baby(
         id: id,
         name: name,
         birthDate: birthDate,
         gender: Gender.values[genderIndex],
+        avatarPath: avatarPath,
       );
 }

@@ -1,44 +1,41 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'baby_model.dart';
+part of 'product_model.dart';
 
 // **************************************************************************
 // TypeAdapterGenerator
 // **************************************************************************
 
-class BabyModelAdapter extends TypeAdapter<BabyModel> {
+class ProductModelAdapter extends TypeAdapter<ProductModel> {
   @override
-  final int typeId = 0;
+  final int typeId = 6;
 
   @override
-  BabyModel read(BinaryReader reader) {
+  ProductModel read(BinaryReader reader) {
     final numOfFields = reader.readByte();
     final fields = <int, dynamic>{
       for (int i = 0; i < numOfFields; i++) reader.readByte(): reader.read(),
     };
-    return BabyModel(
+    return ProductModel(
       id: fields[0] as String,
       name: fields[1] as String,
-      birthDate: fields[2] as DateTime,
-      genderIndex: fields[3] as int,
-      avatarPath: fields[4] as String?,
+      unit: fields[2] as String,
+      imagePath: fields[3] as String?,
     );
   }
 
   @override
-  void write(BinaryWriter writer, BabyModel obj) {
+  void write(BinaryWriter writer, ProductModel obj) {
     writer
-      ..writeByte(5)
+      ..writeByte(4)
       ..writeByte(0)
       ..write(obj.id)
       ..writeByte(1)
       ..write(obj.name)
       ..writeByte(2)
-      ..write(obj.birthDate)
+      ..write(obj.unit)
       ..writeByte(3)
-      ..write(obj.genderIndex)
-      ..writeByte(4)
-      ..write(obj.avatarPath);
+      ..write(obj.imagePath);
   }
 
   @override
@@ -47,7 +44,7 @@ class BabyModelAdapter extends TypeAdapter<BabyModel> {
   @override
   bool operator ==(Object other) =>
       identical(this, other) ||
-      other is BabyModelAdapter &&
+      other is ProductModelAdapter &&
           runtimeType == other.runtimeType &&
           typeId == other.typeId;
 }

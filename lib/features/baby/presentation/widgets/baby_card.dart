@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 
 import '../../../../core/theme/app_spacing.dart';
@@ -10,6 +12,7 @@ class BabyCard extends StatelessWidget {
     required this.baby,
     required this.isActive,
     required this.onTap,
+    this.onEdit,
     this.onDelete,
     super.key,
   });
@@ -17,6 +20,7 @@ class BabyCard extends StatelessWidget {
   final Baby baby;
   final bool isActive;
   final VoidCallback onTap;
+  final VoidCallback? onEdit;
   final VoidCallback? onDelete;
 
   @override
@@ -29,10 +33,12 @@ class BabyCard extends StatelessWidget {
           horizontal: AppSpacing.lg,
           vertical: AppSpacing.xs,
         ),
-        leading: CircleAvatar(
-          backgroundColor: _genderColor,
-          child: Icon(_genderIcon, color: Colors.white),
-        ),
+        leading: _hasAvatar
+            ? CircleAvatar(backgroundImage: FileImage(File(baby.avatarPath!)))
+            : CircleAvatar(
+                backgroundColor: _genderColor,
+                child: Icon(_genderIcon, color: Colors.white),
+              ),
         title: Text(baby.name, style: theme.textTheme.titleMedium),
         subtitle: Text(DateTime.now().babyAgeFrom(baby.birthDate)),
         trailing: Row(
@@ -40,6 +46,12 @@ class BabyCard extends StatelessWidget {
           children: [
             if (isActive)
               Icon(Icons.check_circle, color: theme.colorScheme.primary),
+            if (onEdit != null)
+              IconButton(
+                icon: const Icon(Icons.edit_outlined),
+                onPressed: onEdit,
+                tooltip: 'Sửa',
+              ),
             if (onDelete != null)
               IconButton(
                 icon: const Icon(Icons.delete_outline),
@@ -52,6 +64,9 @@ class BabyCard extends StatelessWidget {
       ),
     );
   }
+
+  bool get _hasAvatar =>
+      baby.avatarPath != null && File(baby.avatarPath!).existsSync();
 
   IconData get _genderIcon => switch (baby.gender) {
         Gender.male => Icons.male,

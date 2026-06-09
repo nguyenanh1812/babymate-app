@@ -3,6 +3,8 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/widgets/app_empty_state.dart';
+import '../../../../core/widgets/confirm_dialog.dart';
+import '../../domain/entities/baby.dart';
 import '../cubit/baby_cubit.dart';
 import '../widgets/baby_card.dart';
 import 'add_baby_page.dart';
@@ -11,13 +13,13 @@ import 'add_baby_page.dart';
 class BabyListPage extends StatelessWidget {
   const BabyListPage({super.key});
 
-  void _openAddBaby(BuildContext context) {
+  void _openForm(BuildContext context, {Baby? existing}) {
     final cubit = context.read<BabyCubit>();
     Navigator.of(context).push(
       MaterialPageRoute<void>(
         builder: (_) => BlocProvider.value(
           value: cubit,
-          child: const AddBabyPage(),
+          child: AddBabyPage(existing: existing),
         ),
       ),
     );
@@ -29,24 +31,12 @@ class BabyListPage extends StatelessWidget {
     String name,
   ) async {
     final cubit = context.read<BabyCubit>();
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Xoá hồ sơ bé?'),
-        content: Text('Bạn có chắc muốn xoá hồ sơ "$name"?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('Huỷ'),
-          ),
-          FilledButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('Xoá'),
-          ),
-        ],
-      ),
+    final ok = await showConfirmDialog(
+      context,
+      title: 'Xoá hồ sơ bé?',
+      message: 'Bạn có chắc muốn xoá hồ sơ "$name"?',
     );
-    if (ok ?? false) await cubit.removeBaby(id);
+    if (ok) await cubit.removeBaby(id);
   }
 
   @override
@@ -54,7 +44,7 @@ class BabyListPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Bé yêu của mẹ')),
       floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => _openAddBaby(context),
+        onPressed: () => _openForm(context),
         icon: const Icon(Icons.add),
         label: const Text('Thêm bé'),
       ),
@@ -79,6 +69,7 @@ class BabyListPage extends StatelessWidget {
                 baby: baby,
                 isActive: baby.id == state.activeBabyId,
                 onTap: () => context.read<BabyCubit>().selectBaby(baby.id),
+                onEdit: () => _openForm(context, existing: baby),
                 onDelete: () => _confirmDelete(context, baby.id, baby.name),
               );
             },

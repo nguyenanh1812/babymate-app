@@ -12,6 +12,7 @@ class Baby extends Equatable {
     required this.name,
     required this.birthDate,
     required this.gender,
+    this.avatarPath,
   });
 
   final String id;
@@ -19,15 +20,24 @@ class Baby extends Equatable {
   final DateTime birthDate;
   final Gender gender;
 
-  Baby copyWith({String? name, DateTime? birthDate, Gender? gender}) {
+  /// Đường dẫn ảnh đại diện của bé (null nếu chưa đặt).
+  final String? avatarPath;
+
+  Baby copyWith({
+    String? name,
+    DateTime? birthDate,
+    Gender? gender,
+    String? avatarPath,
+  }) {
     return Baby(
       id: id,
       name: name ?? this.name,
       birthDate: birthDate ?? this.birthDate,
       gender: gender ?? this.gender,
+      avatarPath: avatarPath ?? this.avatarPath,
     );
   }
 
   @override
-  List<Object?> get props => [id, name, birthDate, gender];
+  List<Object?> get props => [id, name, birthDate, gender, avatarPath];
 }
