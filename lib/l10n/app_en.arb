@@ -1,0 +1,11 @@
+{
+  "@@locale": "en",
+  "appName": "Con ơi",
+  "@appName": {
+    "description": "Application name"
+  },
+  "welcomeTitle": "Welcome to Con ơi",
+  "@welcomeTitle": {
+    "description": "Welcome screen title"
+  }
+}

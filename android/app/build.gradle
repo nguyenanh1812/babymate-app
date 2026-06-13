@@ -8,9 +8,12 @@ plugins {
 android {
     namespace = "com.example.babymate_app"
     compileSdk = flutter.compileSdkVersion
-    ndkVersion = flutter.ndkVersion
+    // Một số plugin (flutter_local_notifications, path_provider) yêu cầu NDK 25.
+    ndkVersion = "25.1.8937393"
 
     compileOptions {
+        // Bắt buộc cho flutter_local_notifications (dùng java.time qua desugaring).
+        coreLibraryDesugaringEnabled true
         sourceCompatibility = JavaVersion.VERSION_1_8
         targetCompatibility = JavaVersion.VERSION_1_8
     }
@@ -41,4 +44,8 @@ android {
 
 flutter {
     source = "../.."
+}
+
+dependencies {
+    coreLibraryDesugaring "com.android.tools:desugar_jdk_libs:2.1.4"
 }

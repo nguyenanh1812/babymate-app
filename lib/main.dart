@@ -1,22 +1,11 @@
-import 'package:flutter/material.dart';
+import 'app.dart';
+import 'bootstrap.dart';
+import 'core/config/app_config.dart';
 
+/// Điểm vào mặc định (môi trường dev).
+///
+/// Khi cần nhiều flavor, tạo thêm `main_prod.dart` gọi `bootstrap` với
+/// [AppConfig.prod] và build/run bằng `--target lib/main_prod.dart`.
 void main() {
-  runApp(const BabyMateApp());
-}
-
-class BabyMateApp extends StatelessWidget {
-  const BabyMateApp({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'BabyMate',
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: Text('BabyMate'),
-        ),
-      ),
-    );
-  }
+  bootstrap(BabyMateApp.new, config: AppConfig.dev);
 }
