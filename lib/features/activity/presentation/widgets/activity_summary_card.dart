@@ -24,12 +24,16 @@ class ActivitySummaryCard extends StatefulWidget {
     required this.includes,
     this.trailing,
     this.icon = Icons.today_rounded,
+    this.onPickDate,
     super.key,
   });
 
   final String title;
   final String? trailing;
   final IconData icon;
+
+  /// Nếu khác null: phần ngày ở góc phải bấm được để chọn ngày.
+  final VoidCallback? onPickDate;
 
   /// Hoạt động có thời điểm [time] có được tính vào số liệu không.
   final bool Function(DateTime time) includes;
@@ -130,12 +134,41 @@ class _ActivitySummaryCardState extends State<ActivitySummaryCard> {
                     ),
                     if (widget.trailing != null) ...[
                       const Spacer(),
-                      Text(
-                        widget.trailing!,
-                        style: theme.textTheme.bodySmall?.copyWith(
-                          color: theme.colorScheme.onSurfaceVariant,
+                      if (widget.onPickDate != null)
+                        InkWell(
+                          onTap: widget.onPickDate,
+                          borderRadius: BorderRadius.circular(AppRadius.pill),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: AppSpacing.xs,
+                              vertical: AppSpacing.xxs,
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.calendar_today_rounded,
+                                  size: 14,
+                                  color: theme.colorScheme.onSurfaceVariant,
+                                ),
+                                const SizedBox(width: AppSpacing.xxs),
+                                Text(
+                                  widget.trailing!,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    color: theme.colorScheme.onSurfaceVariant,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        )
+                      else
+                        Text(
+                          widget.trailing!,
+                          style: theme.textTheme.bodySmall?.copyWith(
+                            color: theme.colorScheme.onSurfaceVariant,
+                          ),
                         ),
-                      ),
                     ],
                   ],
                 ),

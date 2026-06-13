@@ -28,6 +28,9 @@ abstract final class StorageKeys {
   /// Box lưu sản phẩm tự thêm trong kho.
   static const String productBox = 'product_box';
 
+  /// Box lưu các "khoảnh khắc" (ảnh + mô tả).
+  static const String momentBox = 'moment_box';
+
   // Key trong settingsBox
   static const String themeMode = 'theme_mode';
   static const String localeCode = 'locale_code';
