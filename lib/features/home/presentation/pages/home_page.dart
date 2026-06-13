@@ -6,20 +6,18 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import '../../../../core/theme/app_spacing.dart';
 import '../../../../core/utils/date_x.dart';
 import '../../../../core/widgets/app_empty_state.dart';
-import '../../../activity/domain/entities/activity.dart';
 import '../../../activity/presentation/activity_actions.dart';
 import '../../../activity/presentation/cubit/activity_cubit.dart';
 import '../../../activity/presentation/pages/activity_list_page.dart';
-import '../../../activity/presentation/pages/add_activity_page.dart';
+import '../../../activity/presentation/widgets/activity_summary_card.dart';
 import '../../../activity/presentation/widgets/activity_timeline.dart';
-import '../../../activity/presentation/widgets/activity_visual.dart';
 import '../../../baby/domain/entities/baby.dart';
 import '../../../baby/presentation/cubit/baby_cubit.dart';
 import '../../../baby/presentation/pages/baby_list_page.dart';
 import '../../../growth/presentation/cubit/growth_cubit.dart';
 import '../../../inventory/presentation/cubit/inventory_cubit.dart';
 import '../../../pumping/presentation/cubit/pumping_cubit.dart';
-import '../widgets/today_summary.dart';
+import '../../../settings/presentation/pages/settings_page.dart';
 
 /// Trang chủ: tổng quan hôm nay của bé đang chọn + ghi nhanh hoạt động.
 class HomePage extends StatelessWidget {
@@ -47,9 +45,14 @@ class HomePage extends StatelessWidget {
               title: Text(baby == null ? 'Con ơi' : '${baby.name} ơi'),
               actions: [
                 IconButton(
+                  icon: const Icon(Icons.people_alt_outlined),
+                  tooltip: 'Hồ sơ bé',
+                  onPressed: () => _push(context, const BabyListPage()),
+                ),
+                IconButton(
                   icon: const Icon(Icons.settings_outlined),
                   tooltip: 'Cài đặt',
-                  onPressed: () => _push(context, const BabyListPage()),
+                  onPressed: () => _push(context, const SettingsPage()),
                 ),
               ],
             ),
@@ -71,15 +74,14 @@ class _Dashboard extends StatelessWidget {
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
         _GreetingHeader(baby: baby),
-        const SizedBox(height: AppSpacing.xl),
-        BlocBuilder<ActivityCubit, ActivityState>(
-          builder: (context, state) => TodaySummary(state: state),
+        const SizedBox(height: AppSpacing.lg),
+        // Thẻ tổng quan kèm nút "+" để thêm hoạt động ngay trên từng ô.
+        ActivitySummaryCard(
+          title: 'Hôm nay',
+          includes: (t) => t.isToday,
+          trailing: DateTime.now().ddMMyyyy,
         ),
-        const SizedBox(height: AppSpacing.xl),
-        const _SectionTitle(title: 'Ghi nhanh'),
-        const SizedBox(height: AppSpacing.md),
-        _QuickActions(babyId: baby.id),
-        const SizedBox(height: AppSpacing.xl),
+        const SizedBox(height: AppSpacing.sm),
         _SectionTitle(
           title: 'Nhật ký',
           action: TextButton(
@@ -94,7 +96,7 @@ class _Dashboard extends StatelessWidget {
   }
 }
 
-/// Thẻ chào mừng đầu trang: avatar + tên + tuổi của bé trên nền gradient ấm.
+/// Dòng chào đầu trang: avatar + tên + tuổi của bé (nền phẳng theo theme).
 class _GreetingHeader extends StatelessWidget {
   const _GreetingHeader({required this.baby});
   final Baby baby;
@@ -105,65 +107,44 @@ class _GreetingHeader extends StatelessWidget {
     final initial = baby.name.isEmpty ? '?' : baby.name.characters.first;
     final hasAvatar =
         baby.avatarPath != null && File(baby.avatarPath!).existsSync();
-    return Container(
-      padding: const EdgeInsets.all(AppSpacing.lg),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadius.xl),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.colorScheme.primary,
-            theme.colorScheme.secondary,
-          ],
-        ),
-      ),
-      child: Row(
-        children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: Colors.white.withOpacity(0.25),
-            backgroundImage:
-                hasAvatar ? FileImage(File(baby.avatarPath!)) : null,
-            child: hasAvatar
-                ? null
-                : Text(
-                    initial.toUpperCase(),
-                    style: theme.textTheme.headlineSmall?.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-          ),
-          const SizedBox(width: AppSpacing.lg),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  baby.name,
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 34,
+          backgroundColor: theme.colorScheme.primary.withOpacity(0.15),
+          backgroundImage: hasAvatar ? FileImage(File(baby.avatarPath!)) : null,
+          child: hasAvatar
+              ? null
+              : Text(
+                  initial.toUpperCase(),
                   style: theme.textTheme.headlineSmall?.copyWith(
-                    color: Colors.white,
+                    color: theme.colorScheme.primary,
                     fontWeight: FontWeight.w700,
                   ),
                 ),
-                const SizedBox(height: AppSpacing.xxs),
-                Text(
-                  DateTime.now().babyAgeFrom(baby.birthDate),
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white.withOpacity(0.9),
-                  ),
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                baby.name,
+                style: theme.textTheme.titleLarge?.copyWith(
+                  fontWeight: FontWeight.w700,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: AppSpacing.xxs),
+              Text(
+                DateTime.now().babyAgeFrom(baby.birthDate),
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ],
           ),
-          Icon(
-            Icons.child_care_rounded,
-            color: Colors.white.withOpacity(0.7),
-            size: 32,
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
@@ -192,108 +173,6 @@ class _SectionTitle extends StatelessWidget {
   }
 }
 
-class _QuickActions extends StatelessWidget {
-  const _QuickActions({required this.babyId});
-  final String babyId;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        for (final type in ActivityType.values) ...[
-          if (type != ActivityType.values.first)
-            const SizedBox(width: AppSpacing.md),
-          _ActionButton(
-            visual: ActivityVisual.of(type),
-            onTap: () => _add(context, type),
-          ),
-        ],
-      ],
-    );
-  }
-
-  void _add(BuildContext context, ActivityType type) {
-    final cubit = context.read<ActivityCubit>();
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => BlocProvider.value(
-          value: cubit,
-          child: AddActivityPage(type: type, babyId: babyId),
-        ),
-      ),
-    );
-  }
-}
-
-class _ActionButton extends StatelessWidget {
-  const _ActionButton({required this.visual, required this.onTap});
-
-  final ActivityVisual visual;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    return Expanded(
-      child: Material(
-        color: visual.color,
-        elevation: 1.5,
-        shadowColor: visual.color.withOpacity(0.4),
-        borderRadius: BorderRadius.circular(AppRadius.lg),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(AppRadius.lg),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: AppSpacing.lg),
-            child: Column(
-              children: [
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.22),
-                        shape: BoxShape.circle,
-                      ),
-                      child: Icon(visual.icon, color: Colors.white, size: 24),
-                    ),
-                    Positioned(
-                      right: -2,
-                      bottom: -2,
-                      child: Container(
-                        padding: const EdgeInsets.all(2),
-                        decoration: const BoxDecoration(
-                          color: Colors.white,
-                          shape: BoxShape.circle,
-                        ),
-                        child: Icon(
-                          Icons.add_rounded,
-                          size: 14,
-                          color: visual.color,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: AppSpacing.sm),
-                Text(
-                  visual.label,
-                  style: theme.textTheme.labelLarge?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _TodayList extends StatelessWidget {
   const _TodayList();
 
@@ -301,14 +180,14 @@ class _TodayList extends StatelessWidget {
   Widget build(BuildContext context) {
     return BlocBuilder<ActivityCubit, ActivityState>(
       builder: (context, state) {
-        final today = state.today;
-        if (today.isEmpty) {
+        final entries = state.day;
+        if (entries.isEmpty) {
           return const _EmptyToday();
         }
         return Padding(
           padding: const EdgeInsets.symmetric(vertical: AppSpacing.sm),
           child: ActivityTimeline(
-            activities: today,
+            activities: entries,
             onTap: (a) => openEditActivity(context, a),
             onDelete: (a) => deleteActivity(context, a),
           ),
@@ -336,7 +215,7 @@ class _EmptyToday extends StatelessWidget {
             ),
             const SizedBox(height: AppSpacing.sm),
             Text(
-              'Chưa có hoạt động nào hôm nay.',
+              'Chưa có hoạt động nào trong ngày này.',
               style: theme.textTheme.bodyMedium,
             ),
           ],

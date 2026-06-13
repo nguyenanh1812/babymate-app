@@ -8,6 +8,7 @@ import '../../../../core/widgets/period_filter.dart';
 import '../../domain/entities/activity.dart';
 import '../activity_actions.dart';
 import '../cubit/activity_cubit.dart';
+import '../widgets/activity_summary_card.dart';
 import '../widgets/activity_tile.dart';
 
 /// Toàn bộ lịch sử hoạt động của bé, nhóm theo ngày, lọc theo thời gian.
@@ -19,18 +20,35 @@ class ActivityListPage extends StatefulWidget {
 }
 
 class _ActivityListPageState extends State<ActivityListPage> {
-  TimePeriod _period = TimePeriod.all;
+  DateFilter _filter = const DateFilter(period: TimePeriod.all);
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Nhật ký của bé')),
+      appBar: AppBar(
+        title: const Text('Nhật ký của bé'),
+        actions: [
+          DateRangeFilterButton(
+            value: _filter,
+            onChanged: (f) => setState(() => _filter = f),
+          ),
+        ],
+      ),
       body: Column(
         children: [
           const SizedBox(height: AppSpacing.sm),
           PeriodFilter(
-            selected: _period,
-            onChanged: (p) => setState(() => _period = p),
+            value: _filter,
+            onChanged: (f) => setState(() => _filter = f),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
+            child: ActivitySummaryCard(
+              title: _filter.label,
+              includes: _filter.contains,
+              icon: Icons.insights_rounded,
+            ),
           ),
           const SizedBox(height: AppSpacing.sm),
           Expanded(
@@ -49,11 +67,14 @@ class _ActivityListPageState extends State<ActivityListPage> {
                   );
                 }
                 final filtered = state.activities
-                    .where((a) => _period.contains(a.time))
+                    .where((a) => _filter.contains(a.time))
                     .toList();
                 if (filtered.isEmpty) {
                   return Center(
-                    child: Text('Không có hoạt động trong "${_period.label}".'),
+                    child: InlineEmptyState(
+                      icon: Icons.filter_alt_off_rounded,
+                      message: 'Không có hoạt động trong "${_filter.label}".',
+                    ),
                   );
                 }
 

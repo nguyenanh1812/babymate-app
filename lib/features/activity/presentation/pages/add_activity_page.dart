@@ -116,9 +116,7 @@ class _AddActivityPageState extends State<AddActivityPage> {
           babyId: widget.babyId,
           time: _time,
           feedingType: _feedingType,
-          amountMl: _feedingType == FeedingType.bottle
-              ? int.tryParse(_amountController.text)
-              : null,
+          amountMl: int.tryParse(_amountController.text),
           note: noteOrNull,
           id: id,
         );
@@ -198,17 +196,15 @@ class _AddActivityPageState extends State<AddActivityPage> {
             selected: {_feedingType},
             onSelectionChanged: (s) => setState(() => _feedingType = s.first),
           ),
-          if (_feedingType == FeedingType.bottle) ...[
-            const SizedBox(height: AppSpacing.md),
-            TextField(
-              controller: _amountController,
-              keyboardType: TextInputType.number,
-              decoration: const InputDecoration(
-                labelText: 'Lượng sữa (ml)',
-                suffixText: 'ml',
-              ),
+          const SizedBox(height: AppSpacing.md),
+          TextField(
+            controller: _amountController,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'Lượng sữa (ml, không bắt buộc)',
+              suffixText: 'ml',
             ),
-          ],
+          ),
         ];
       case ActivityType.sleep:
         return [

@@ -27,3 +27,15 @@ extension DateTimeX on DateTime {
     return '$months tháng $days ngày';
   }
 }
+
+/// Tiện ích hiển thị thời lượng (giấc ngủ, khoảng cách giữa các cữ...).
+extension DurationX on Duration {
+  /// Ví dụ: "3g 20p", "3g", "45p". Bỏ phần bằng 0 cho gọn.
+  String get hmShort {
+    final h = inHours;
+    final m = inMinutes.remainder(60);
+    if (h > 0 && m > 0) return '${h}g ${m}p';
+    if (h > 0) return '${h}g';
+    return '${m}p';
+  }
+}

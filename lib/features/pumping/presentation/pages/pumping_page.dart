@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/period_filter.dart';
 import '../../domain/entities/pumping_session.dart';
 import '../cubit/pumping_cubit.dart';
@@ -22,7 +23,7 @@ class PumpingPage extends StatefulWidget {
 }
 
 class _PumpingPageState extends State<PumpingPage> {
-  TimePeriod _period = TimePeriod.week;
+  DateFilter _filter = const DateFilter(period: TimePeriod.week);
 
   void _openForm({PumpingSession? existing}) {
     final cubit = context.read<PumpingCubit>();
@@ -45,6 +46,10 @@ class _PumpingPageState extends State<PumpingPage> {
       appBar: AppBar(
         title: const Text('Hút sữa cùng mẹ'),
         actions: [
+          DateRangeFilterButton(
+            value: _filter,
+            onChanged: (f) => setState(() => _filter = f),
+          ),
           IconButton(
             icon: const Icon(Icons.notifications_outlined),
             tooltip: 'Lịch nhắc',
@@ -69,7 +74,7 @@ class _PumpingPageState extends State<PumpingPage> {
           }
 
           final filtered =
-              state.sessions.where((s) => _period.contains(s.time)).toList();
+              state.sessions.where((s) => _filter.contains(s.time)).toList();
 
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
@@ -80,8 +85,8 @@ class _PumpingPageState extends State<PumpingPage> {
               ),
               const SizedBox(height: AppSpacing.lg),
               PeriodFilter(
-                selected: _period,
-                onChanged: (p) => setState(() => _period = p),
+                value: _filter,
+                onChanged: (f) => setState(() => _filter = f),
               ),
               const SizedBox(height: AppSpacing.lg),
               Card(
@@ -97,11 +102,9 @@ class _PumpingPageState extends State<PumpingPage> {
               ),
               const SizedBox(height: AppSpacing.xs),
               if (filtered.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                  child: Center(
-                    child: Text('Không có cữ hút trong "${_period.label}".'),
-                  ),
+                InlineEmptyState(
+                  icon: Icons.filter_alt_off_rounded,
+                  message: 'Không có cữ hút trong "${_filter.label}".',
                 )
               else
                 ...filtered.map(
