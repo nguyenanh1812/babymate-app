@@ -22,7 +22,7 @@ class GrowthPage extends StatefulWidget {
 }
 
 class _GrowthPageState extends State<GrowthPage> {
-  TimePeriod _period = TimePeriod.all;
+  DateFilter _filter = const DateFilter(period: TimePeriod.all);
   GrowthMetric _metric = GrowthMetric.weight;
 
   void _openForm({GrowthRecord? existing}) {
@@ -43,7 +43,15 @@ class _GrowthPageState extends State<GrowthPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Bé lớn từng ngày')),
+      appBar: AppBar(
+        title: const Text('Bé lớn từng ngày'),
+        actions: [
+          DateRangeFilterButton(
+            value: _filter,
+            onChanged: (f) => setState(() => _filter = f),
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'fab_growth',
         onPressed: _openForm,
@@ -64,14 +72,14 @@ class _GrowthPageState extends State<GrowthPage> {
           }
 
           final filtered =
-              state.records.where((r) => _period.contains(r.date)).toList();
+              state.records.where((r) => _filter.contains(r.date)).toList();
 
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [
               PeriodFilter(
-                selected: _period,
-                onChanged: (p) => setState(() => _period = p),
+                value: _filter,
+                onChanged: (f) => setState(() => _filter = f),
               ),
               const SizedBox(height: AppSpacing.md),
               SegmentedButton<GrowthMetric>(
@@ -96,11 +104,9 @@ class _GrowthPageState extends State<GrowthPage> {
               ),
               const SizedBox(height: AppSpacing.xs),
               if (filtered.isEmpty)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: AppSpacing.xl),
-                  child: Center(
-                    child: Text('Không có lần đo trong "${_period.label}".'),
-                  ),
+                InlineEmptyState(
+                  icon: Icons.filter_alt_off_rounded,
+                  message: 'Không có lần đo trong "${_filter.label}".',
                 )
               else
                 ...filtered.map(

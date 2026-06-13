@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_spacing.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../core/widgets/avatar_picker.dart';
 import '../../domain/entities/product.dart';
 import '../cubit/inventory_cubit.dart';
@@ -123,7 +124,7 @@ class _InventoryPageState extends State<InventoryPage> {
     final cubit = context.read<InventoryCubit>();
     final r = await _askProduct(context);
     if (r != null && r.name.isNotEmpty) {
-      await cubit.addProduct(name: r.name, unit: r.unit);
+      await cubit.addProduct(name: r.name, unit: r.unit, imagePath: r.imagePath);
     }
   }
 
@@ -139,6 +140,13 @@ class _InventoryPageState extends State<InventoryPage> {
       ),
       body: BlocBuilder<InventoryCubit, InventoryState>(
         builder: (context, state) {
+          if (state.products.isEmpty) {
+            return const AppEmptyState(
+              icon: Icons.inventory_2_outlined,
+              title: 'Kho còn trống',
+              message: 'Thêm sản phẩm để theo dõi tồn kho đồ dùng của bé nhé!',
+            );
+          }
           return ListView(
             padding: const EdgeInsets.all(AppSpacing.lg),
             children: [

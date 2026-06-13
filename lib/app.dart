@@ -10,6 +10,7 @@ import 'features/growth/presentation/cubit/growth_cubit.dart';
 import 'features/inventory/presentation/cubit/inventory_cubit.dart';
 import 'features/pumping/presentation/cubit/pumping_cubit.dart';
 import 'features/pumping/presentation/cubit/pumping_reminder_cubit.dart';
+import 'features/settings/presentation/cubit/settings_cubit.dart';
 import 'l10n/app_localizations.dart';
 import 'router/app_router.dart';
 
@@ -63,24 +64,101 @@ class BabyMateApp extends StatelessWidget {
             return cubit;
           },
         ),
+        BlocProvider<SettingsCubit>(
+          create: (_) => getIt<SettingsCubit>(),
+        ),
       ],
-      child: MaterialApp.router(
-        onGenerateTitle: (context) => AppLocalizations.of(context).appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        // Mặc định luôn sáng cho tông pastel ấm; chưa có màn hình cài đặt để
-        // người dùng đổi. Khi thêm feature cài đặt thì cho phép chọn lại.
-        themeMode: ThemeMode.light,
-        routerConfig: AppRouter.router,
-        localizationsDelegates: const [
-          AppLocalizations.delegate,
-          GlobalMaterialLocalizations.delegate,
-          GlobalWidgetsLocalizations.delegate,
-          GlobalCupertinoLocalizations.delegate,
-        ],
-        supportedLocales: AppLocalizations.supportedLocales,
+      child: BlocBuilder<SettingsCubit, SettingsState>(
+        builder: (context, settings) {
+          return MaterialApp.router(
+            onGenerateTitle: (context) => AppLocalizations.of(context).appName,
+            debugShowCheckedModeBanner: false,
+            theme: AppTheme.light,
+            darkTheme: AppTheme.dark,
+            themeMode: settings.themeMode,
+            locale: settings.locale,
+            routerConfig: AppRouter.router,
+            // Lắng nghe lỗi của mọi cubit để báo SnackBar (đặt trong cây
+            // MaterialApp nên ScaffoldMessenger luôn sẵn sàng).
+            builder: (context, child) => _GlobalErrorListener(
+              child: child ?? const SizedBox.shrink(),
+            ),
+            localizationsDelegates: const [
+              AppLocalizations.delegate,
+              GlobalMaterialLocalizations.delegate,
+              GlobalWidgetsLocalizations.delegate,
+              GlobalCupertinoLocalizations.delegate,
+            ],
+            supportedLocales: AppLocalizations.supportedLocales,
+          );
+        },
       ),
+    );
+  }
+}
+
+/// Báo lỗi dùng chung: khi bất kỳ cubit nào chuyển sang trạng thái lỗi (kèm
+/// thông điệp), hiện một SnackBar. Gom về một chỗ để mọi màn hình đồng nhất.
+class _GlobalErrorListener extends StatelessWidget {
+  const _GlobalErrorListener({required this.child});
+
+  final Widget child;
+
+  void _show(BuildContext context, String? message) {
+    if (message == null) return;
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(message),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: Theme.of(context).colorScheme.error,
+        ),
+      );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return MultiBlocListener(
+      listeners: [
+        BlocListener<BabyCubit, BabyState>(
+          listenWhen: (p, c) =>
+              c.status == BabyStatus.error &&
+              c.errorMessage != p.errorMessage,
+          listener: (context, state) => _show(context, state.errorMessage),
+        ),
+        BlocListener<ActivityCubit, ActivityState>(
+          listenWhen: (p, c) =>
+              c.status == ActivityStatus.error &&
+              c.errorMessage != p.errorMessage,
+          listener: (context, state) => _show(context, state.errorMessage),
+        ),
+        BlocListener<GrowthCubit, GrowthState>(
+          listenWhen: (p, c) =>
+              c.status == GrowthStatus.error &&
+              c.errorMessage != p.errorMessage,
+          listener: (context, state) => _show(context, state.errorMessage),
+        ),
+        BlocListener<PumpingCubit, PumpingState>(
+          listenWhen: (p, c) =>
+              c.status == PumpingStatus.error &&
+              c.errorMessage != p.errorMessage,
+          listener: (context, state) => _show(context, state.errorMessage),
+        ),
+        BlocListener<PumpingReminderCubit, PumpingReminderState>(
+          listenWhen: (p, c) =>
+              c.status == ReminderStatus.error &&
+              c.errorMessage != p.errorMessage,
+          listener: (context, state) => _show(context, state.errorMessage),
+        ),
+        BlocListener<InventoryCubit, InventoryState>(
+          listenWhen: (p, c) =>
+              c.status == InventoryStatus.error &&
+              c.errorMessage != p.errorMessage,
+          listener: (context, state) => _show(context, state.errorMessage),
+        ),
+      ],
+      child: child,
     );
   }
 }

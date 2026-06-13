@@ -44,6 +44,7 @@ class BabyListPage extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(title: const Text('Bé yêu của mẹ')),
       floatingActionButton: FloatingActionButton.extended(
+        heroTag: 'fab_baby',
         onPressed: () => _openForm(context),
         icon: const Icon(Icons.add),
         label: const Text('Thêm bé'),

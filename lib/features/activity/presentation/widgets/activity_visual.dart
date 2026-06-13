@@ -23,17 +23,17 @@ class ActivityVisual {
   static ActivityVisual of(ActivityType type) => switch (type) {
         ActivityType.feeding => const ActivityVisual(
             icon: Icons.local_drink_rounded,
-            color: Color(0xFFF6927F), // san hô
+            color: Color(0xFFDC5F45), // san hô đậm
             label: 'Bú',
           ),
         ActivityType.sleep => const ActivityVisual(
             icon: Icons.bedtime_rounded,
-            color: Color(0xFF9C8FD8), // tím lavender
+            color: Color(0xFF6F5DB8), // tím đậm
             label: 'Ngủ',
           ),
         ActivityType.diaper => const ActivityVisual(
             icon: Icons.baby_changing_station_rounded,
-            color: Color(0xFF56C2A6), // bạc hà
+            color: Color(0xFF2E9E7C), // xanh bạc hà đậm
             label: 'Thay tã',
           ),
       };

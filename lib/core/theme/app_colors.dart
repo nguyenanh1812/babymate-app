@@ -13,10 +13,10 @@ abstract final class AppColors {
   static const Color secondary = Color(0xFFFFC2A1); // cam đào
   static const Color accent = Color(0xFFB7E0CE); // bạc hà nhạt
 
-  // Nền & bề mặt — kem ấm, sáng
-  static const Color background = Color(0xFFFFF9F5);
+  // Nền & bề mặt — kem ấm, sáng, hơi ngả hồng cho thẻ trắng "nổi" lên
+  static const Color background = Color(0xFFFDF4F3);
   static const Color surface = Color(0xFFFFFFFF);
-  static const Color surfaceVariant = Color(0xFFFCEEF0);
+  static const Color surfaceVariant = Color(0xFFF9EEEF);
 
   // Văn bản — nâu ấm thay vì đen tuyền cho dịu mắt
   static const Color textPrimary = Color(0xFF4A3F44);

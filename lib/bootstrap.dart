@@ -14,6 +14,7 @@ import 'features/baby/baby_injection.dart';
 import 'features/growth/growth_injection.dart';
 import 'features/inventory/inventory_injection.dart';
 import 'features/pumping/pumping_injection.dart';
+import 'features/settings/settings_injection.dart';
 
 /// Khởi tạo mọi thứ cần thiết trước khi chạy app, rồi gọi [builder] để dựng
 /// widget gốc.
@@ -44,6 +45,7 @@ Future<void> bootstrap(
   await registerGrowthFeature();
   await registerPumpingFeature();
   await registerInventoryFeature();
+  await registerSettingsFeature();
 
   runApp(builder());
 }
