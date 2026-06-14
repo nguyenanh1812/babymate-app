@@ -11,20 +11,25 @@ abstract final class ImageStorage {
 
   static final ImagePicker _picker = ImagePicker();
 
-  static Future<String?> pick({required ImageSource source}) async {
+  static Future<String?> pick({
+    required ImageSource source,
+    String folder = 'avatars',
+    int maxWidth = 800,
+    int quality = 80,
+  }) async {
     final picked = await _picker.pickImage(
       source: source,
-      maxWidth: 800,
-      imageQuality: 80,
+      maxWidth: maxWidth.toDouble(),
+      imageQuality: quality,
     );
     if (picked == null) return null;
 
     final dir = await getApplicationDocumentsDirectory();
-    final folder = Directory('${dir.path}/avatars');
-    await folder.create(recursive: true);
+    final dest = Directory('${dir.path}/$folder');
+    await dest.create(recursive: true);
     final ext = picked.path.split('.').last;
-    final dest = '${folder.path}/${DateTime.now().microsecondsSinceEpoch}.$ext';
-    await File(picked.path).copy(dest);
-    return dest;
+    final path = '${dest.path}/${DateTime.now().microsecondsSinceEpoch}.$ext';
+    await File(picked.path).copy(path);
+    return path;
   }
 }

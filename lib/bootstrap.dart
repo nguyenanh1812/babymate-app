@@ -13,6 +13,7 @@ import 'features/activity/activity_injection.dart';
 import 'features/baby/baby_injection.dart';
 import 'features/growth/growth_injection.dart';
 import 'features/inventory/inventory_injection.dart';
+import 'features/moment/moment_injection.dart';
 import 'features/pumping/pumping_injection.dart';
 import 'features/settings/settings_injection.dart';
 
@@ -45,6 +46,7 @@ Future<void> bootstrap(
   await registerGrowthFeature();
   await registerPumpingFeature();
   await registerInventoryFeature();
+  await registerMomentFeature();
   await registerSettingsFeature();
 
   runApp(builder());

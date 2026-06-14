@@ -8,6 +8,7 @@ import 'features/activity/presentation/cubit/activity_cubit.dart';
 import 'features/baby/presentation/cubit/baby_cubit.dart';
 import 'features/growth/presentation/cubit/growth_cubit.dart';
 import 'features/inventory/presentation/cubit/inventory_cubit.dart';
+import 'features/moment/presentation/cubit/moment_cubit.dart';
 import 'features/pumping/presentation/cubit/pumping_cubit.dart';
 import 'features/pumping/presentation/cubit/pumping_reminder_cubit.dart';
 import 'features/settings/presentation/cubit/settings_cubit.dart';
@@ -59,6 +60,14 @@ class BabyMateApp extends StatelessWidget {
         BlocProvider<InventoryCubit>(
           create: (_) {
             final cubit = getIt<InventoryCubit>();
+            final activeId = getIt<BabyCubit>().state.activeBabyId;
+            if (activeId != null) cubit.load(activeId);
+            return cubit;
+          },
+        ),
+        BlocProvider<MomentCubit>(
+          create: (_) {
+            final cubit = getIt<MomentCubit>();
             final activeId = getIt<BabyCubit>().state.activeBabyId;
             if (activeId != null) cubit.load(activeId);
             return cubit;
@@ -154,6 +163,12 @@ class _GlobalErrorListener extends StatelessWidget {
         BlocListener<InventoryCubit, InventoryState>(
           listenWhen: (p, c) =>
               c.status == InventoryStatus.error &&
+              c.errorMessage != p.errorMessage,
+          listener: (context, state) => _show(context, state.errorMessage),
+        ),
+        BlocListener<MomentCubit, MomentState>(
+          listenWhen: (p, c) =>
+              c.status == MomentStatus.error &&
               c.errorMessage != p.errorMessage,
           listener: (context, state) => _show(context, state.errorMessage),
         ),

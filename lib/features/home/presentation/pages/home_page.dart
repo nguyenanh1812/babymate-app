@@ -16,6 +16,7 @@ import '../../../baby/presentation/cubit/baby_cubit.dart';
 import '../../../baby/presentation/pages/baby_list_page.dart';
 import '../../../growth/presentation/cubit/growth_cubit.dart';
 import '../../../inventory/presentation/cubit/inventory_cubit.dart';
+import '../../../moment/presentation/cubit/moment_cubit.dart';
 import '../../../pumping/presentation/cubit/pumping_cubit.dart';
 import '../../../settings/presentation/pages/settings_page.dart';
 
@@ -35,6 +36,7 @@ class HomePage extends StatelessWidget {
           context.read<GrowthCubit>().load(id);
           context.read<PumpingCubit>().load(id);
           context.read<InventoryCubit>().load(id);
+          context.read<MomentCubit>().load(id);
         }
       },
       child: BlocBuilder<BabyCubit, BabyState>(
@@ -64,22 +66,43 @@ class HomePage extends StatelessWidget {
   }
 }
 
-class _Dashboard extends StatelessWidget {
+class _Dashboard extends StatefulWidget {
   const _Dashboard({required this.baby});
   final Baby baby;
 
   @override
+  State<_Dashboard> createState() => _DashboardState();
+}
+
+class _DashboardState extends State<_Dashboard> {
+  DateTime _date = DateTime.now().dateOnly;
+
+  Future<void> _pickDate() async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(now.year - 2),
+      lastDate: now,
+      helpText: 'Chọn ngày để xem',
+    );
+    if (picked != null) setState(() => _date = picked.dateOnly);
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final isToday = _date.isToday;
     return ListView(
       padding: const EdgeInsets.all(AppSpacing.lg),
       children: [
-        _GreetingHeader(baby: baby),
+        _GreetingHeader(baby: widget.baby),
         const SizedBox(height: AppSpacing.lg),
-        // Thẻ tổng quan kèm nút "+" để thêm hoạt động ngay trên từng ô.
+        // Thẻ tổng quan kèm nút "+" để thêm hoạt động; bấm ngày để xem quá khứ.
         ActivitySummaryCard(
-          title: 'Hôm nay',
-          includes: (t) => t.isToday,
-          trailing: DateTime.now().ddMMyyyy,
+          title: isToday ? 'Hôm nay' : 'Ngày đã chọn',
+          includes: (t) => t.isSameDay(_date),
+          trailing: _date.ddMMyyyy,
+          onPickDate: _pickDate,
         ),
         const SizedBox(height: AppSpacing.sm),
         _SectionTitle(
@@ -90,7 +113,7 @@ class _Dashboard extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xs),
-        const _TodayList(),
+        _TodayList(date: _date),
       ],
     );
   }
@@ -174,13 +197,17 @@ class _SectionTitle extends StatelessWidget {
 }
 
 class _TodayList extends StatelessWidget {
-  const _TodayList();
+  const _TodayList({required this.date});
+
+  final DateTime date;
 
   @override
   Widget build(BuildContext context) {
     return BlocBuilder<ActivityCubit, ActivityState>(
       builder: (context, state) {
-        final entries = state.day;
+        final entries = state.activities
+            .where((a) => a.time.isSameDay(date))
+            .toList();
         if (entries.isEmpty) {
           return const _EmptyToday();
         }

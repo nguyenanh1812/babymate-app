@@ -6,6 +6,7 @@ import '../../../baby/presentation/cubit/baby_cubit.dart';
 import '../../../baby/presentation/pages/baby_list_page.dart';
 import '../../../growth/presentation/pages/growth_page.dart';
 import '../../../inventory/presentation/pages/inventory_page.dart';
+import '../../../moment/presentation/pages/moments_page.dart';
 import '../../../pumping/presentation/pages/pumping_page.dart';
 import 'home_page.dart';
 
@@ -22,7 +23,14 @@ class MainShell extends StatefulWidget {
 class _MainShellState extends State<MainShell> {
   int _index = 0;
 
-  void _goTo(int index) => setState(() => _index = index);
+  /// Tăng mỗi khi quay lại tab Home từ tab khác → ép Home dựng lại (reset bộ
+  /// lọc ngày về hôm nay).
+  int _homeEpoch = 0;
+
+  void _goTo(int index) => setState(() {
+        if (index == 0 && _index != 0) _homeEpoch++;
+        _index = index;
+      });
 
   @override
   Widget build(BuildContext context) {
@@ -36,10 +44,13 @@ class _MainShellState extends State<MainShell> {
             );
 
         final tabs = <Widget>[
-          const HomePage(),
+          HomePage(key: ValueKey('home_$_homeEpoch')),
           babyId == null
               ? _RequireBaby(onAddBaby: openProfile)
               : PumpingPage(babyId: babyId),
+          babyId == null
+              ? _RequireBaby(onAddBaby: openProfile)
+              : MomentsPage(babyId: babyId),
           babyId == null
               ? _RequireBaby(onAddBaby: openProfile)
               : GrowthPage(babyId: babyId),
@@ -73,6 +84,11 @@ class _BottomNav extends StatelessWidget {
       label: 'Hút sữa',
     ),
     (
+      icon: Icons.add_a_photo_outlined,
+      active: Icons.add_a_photo_rounded,
+      label: 'Khoảnh khắc',
+    ),
+    (
       icon: Icons.monitor_weight_outlined,
       active: Icons.monitor_weight_rounded,
       label: 'Tăng trưởng',
@@ -87,76 +103,51 @@ class _BottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+    final color = theme.colorScheme.primary;
     final bottomInset = MediaQuery.of(context).padding.bottom;
     const barHeight = 54.0;
+
+    Widget navItem(int i) => Expanded(
+          child: _NavItem(
+            icon: index == i ? _items[i].active : _items[i].icon,
+            label: _items[i].label,
+            selected: index == i,
+            color: color,
+            onTap: () => onTap(i),
+          ),
+        );
+
     return SizedBox(
       height: barHeight + bottomInset,
-      child: LayoutBuilder(
-        builder: (context, c) {
-          final itemWidth = c.maxWidth / _items.length;
-          final notchX = (index + 0.5) * itemWidth;
-          return Stack(
-            clipBehavior: Clip.none,
-            children: [
-              // Nền nav có "lõm" tròn ôm icon active (không viền trên).
-              Positioned.fill(
-                child: CustomPaint(
-                  painter: _NavBarPainter(
-                    centerX: notchX,
-                    radius: 30,
-                    color: theme.colorScheme.surface,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          // Nền phẳng + bóng mềm phía trên (không viền).
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                color: theme.colorScheme.surface,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.06),
+                    blurRadius: 12,
+                    offset: const Offset(0, -2),
                   ),
-                ),
+                ],
               ),
-              SizedBox(
-                height: barHeight,
-                child: Row(
-                  children: [
-                    for (var i = 0; i < _items.length; i++)
-                      Expanded(
-                        child: _NavItem(
-                          icon: index == i ? _items[i].active : _items[i].icon,
-                          label: _items[i].label,
-                          selected: index == i,
-                          color: theme.colorScheme.primary,
-                          onTap: () => onTap(i),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          );
-        },
+            ),
+          ),
+          // 5 tab chia đều: Home · Hút sữa · Khoảnh khắc · Tăng trưởng · Kho.
+          SizedBox(
+            height: barHeight,
+            child: Row(
+              children: [for (var i = 0; i < _items.length; i++) navItem(i)],
+            ),
+          ),
+        ],
       ),
     );
   }
-}
-
-/// Vẽ nền thanh nav với một "lõm" tròn mềm tại [centerX] để ôm icon đang chọn.
-class _NavBarPainter extends CustomPainter {
-  const _NavBarPainter({
-    required this.centerX,
-    required this.radius,
-    required this.color,
-  });
-
-  final double centerX;
-  final double radius;
-  final Color color;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    const notch = CircularNotchedRectangle();
-    final host = Offset.zero & size;
-    final guest = Rect.fromCircle(center: Offset(centerX, 0), radius: radius);
-    final path = notch.getOuterPath(host, guest);
-    canvas.drawPath(path, Paint()..color = color);
-  }
-
-  @override
-  bool shouldRepaint(_NavBarPainter old) =>
-      old.centerX != centerX || old.color != color || old.radius != radius;
 }
 
 class _NavItem extends StatelessWidget {
@@ -182,28 +173,17 @@ class _NavItem extends StatelessWidget {
       containedInkWell: false,
       child: Center(
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 220),
+          duration: const Duration(milliseconds: 200),
           curve: Curves.easeOut,
-          // Tab đang chọn nhô lên khỏi mép nav.
-          transform: Matrix4.translationValues(0, selected ? -16 : 0, 0),
-          transformAlignment: Alignment.center,
-          padding: EdgeInsets.all(selected ? 14 : 10),
+          // Tab đang chọn: vòng tròn đặc nằm gọn trong nav (không nhô lên).
+          padding: EdgeInsets.all(selected ? 11 : 10),
           decoration: BoxDecoration(
             color: selected ? color : Colors.transparent,
             shape: BoxShape.circle,
-            boxShadow: selected
-                ? [
-                    BoxShadow(
-                      color: color.withOpacity(0.45),
-                      blurRadius: 12,
-                      offset: const Offset(0, 5),
-                    ),
-                  ]
-                : null,
           ),
           child: Icon(
             icon,
-            size: 24,
+            size: 23,
             color: selected ? Colors.white : color,
             semanticLabel: label,
           ),
